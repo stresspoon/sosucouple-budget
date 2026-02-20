@@ -38,6 +38,11 @@
             scrollbar-width: none;
         }
     </style>
+
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 </head>
 
 <body
@@ -50,7 +55,10 @@
                 <span class="material-symbols-outlined">arrow_back</span>
             </button>
             <h1 class="text-lg font-bold tracking-tight">설정</h1>
-            <div class="w-10"></div>
+            <button onclick="window.location.href='/add'"
+                class="flex h-10 w-10 items-center justify-center rounded-full text-slate-900 hover:bg-slate-200 dark:text-white dark:hover:bg-white/10 transition-colors">
+                <span class="material-symbols-outlined">edit_square</span>
+            </button>
         </header>
         <main class="flex-1 overflow-y-auto px-4 pb-32 mt-4 space-y-6">
 

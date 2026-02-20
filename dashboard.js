@@ -161,4 +161,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('camera').onchange = handleScan;
     document.getElementById('fileUpload').onchange = handleScan;
+
+    // View Toggle Logic
+    const homeView = document.getElementById('homeView');
+    const dashboardView = document.getElementById('dashboardView');
+    const toggleDashboardBtn = document.getElementById('toggleDashboardBtn');
+    const backToHomeBtn = document.getElementById('backToHomeBtn');
+
+    if (toggleDashboardBtn && backToHomeBtn) {
+        toggleDashboardBtn.onclick = () => {
+            homeView.classList.add('hidden');
+            dashboardView.classList.remove('hidden');
+            dashboardView.classList.add('flex');
+        };
+
+        backToHomeBtn.onclick = () => {
+            dashboardView.classList.add('hidden');
+            dashboardView.classList.remove('flex');
+            homeView.classList.remove('hidden');
+        };
+    }
 });

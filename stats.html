@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -48,6 +49,11 @@
             transform-origin: 50% 50%;
         }
     </style>
+
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 </head>
 
 <body
@@ -79,15 +85,19 @@
                 </button>
             </div>
             <div class="mb-8 flex justify-center">
-                <div class="flex rounded-full bg-slate-200 p-1 dark:bg-white/5">
-                    <button
-                        class="rounded-full bg-white px-6 py-2 text-sm font-bold text-black shadow-sm dark:bg-primary transition-all">
-                        지출 (카테고리)
+                <div class="flex rounded-full bg-slate-200 p-1 dark:bg-white/5 relative">
+                    <button id="modeCat"
+                        class="relative z-10 w-32 rounded-full px-6 py-2 text-sm font-bold text-black dark:text-background-dark transition-all">
+                        지출 카테고리
                     </button>
-                    <button
-                        class="rounded-full px-6 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-not-allowed opacity-50">
+                    <button id="modePayer"
+                        class="relative z-10 w-32 rounded-full px-6 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">
                         결제자 비율
                     </button>
+                    <!-- Active background highlight will be moved by JS -->
+                    <div id="modeBg"
+                        class="absolute top-1 left-1 bottom-1 w-32 bg-white dark:bg-primary rounded-full transition-transform duration-300 shadow-sm">
+                    </div>
                 </div>
             </div>
             <div class="relative mb-8 flex flex-col items-center justify-center">
@@ -132,7 +142,7 @@
             </div>
         </main>
         <nav
-            class="absolute bottom-0 w-full border-t border-slate-200 bg-white/90 px-6 pb-6 pt-3 backdrop-blur-md dark:border-white/5 dark:bg-[#15231b]/90">
+            class="sticky bottom-0 z-30 w-full border-t border-slate-200 bg-white/90 px-6 pb-6 pt-3 backdrop-blur-md dark:border-white/5 dark:bg-[#15231b]/90">
             <div class="flex justify-between">
                 <a class="group flex flex-1 flex-col items-center gap-1" href="/">
                     <span
@@ -140,13 +150,14 @@
                     <span
                         class="text-[10px] font-medium text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">홈</span>
                 </a>
-                <a class="group flex flex-1 flex-col items-center gap-1" href="#">
+                <a class="group flex flex-1 flex-col items-center gap-1" href="/stats">
                     <span class="material-symbols-outlined fill-current text-primary">donut_small</span>
                     <span class="text-[10px] font-medium text-primary">통계</span>
                 </a>
                 <div class="relative -top-8 flex flex-1 justify-center">
-                    <button onclick="window.location.href='/'"
-                        class="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-black shadow-lg shadow-primary/40 transition-transform hover:scale-105 active:scale-95">
+                    <button
+                        onclick="document.getElementById('payerModal').classList.remove('hidden'); setTimeout(() => { document.getElementById('payerModal').classList.remove('opacity-0'); document.getElementById('payerModalContent').classList.remove('translate-y-full'); }, 10); window.currentUploadAction = 'camera';"
+                        class="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-black shadow-lg shadow-primary/40 transition-transform hover:scale-105 active:scale-95 border-4 border-background-light dark:border-background-dark">
                         <span class="material-symbols-outlined text-3xl">photo_camera</span>
                     </button>
                 </div>
@@ -164,6 +175,64 @@
                 </a>
             </div>
         </nav>
+    </div>
+
+    <!-- Payer Selection Modal -->
+    <div id="payerModal"
+        class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center hidden opacity-0 transition-opacity">
+        <div class="bg-surface-dark rounded-t-3xl sm:rounded-3xl w-full max-w-md p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl"
+            id="payerModalContent">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">결제자 선택</h3>
+                <button id="closePayerModalBtn" class="text-slate-400 hover:text-white transition-colors"
+                    onclick="document.getElementById('payerModal').classList.add('opacity-0'); document.getElementById('payerModalContent').classList.add('translate-y-full'); setTimeout(() => document.getElementById('payerModal').classList.add('hidden'), 300);"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <p class="text-slate-400 text-sm mb-6">누구의 결제 내역인지 선택해주세요!</p>
+            <div class="grid grid-cols-3 gap-3">
+                <button
+                    class="payer-btn flex flex-col items-center justify-center bg-[#15231a] hover:bg-primary/20 hover:border-primary/50 text-slate-300 hover:text-primary transition-all rounded-2xl p-4 border border-[#2a4232]"
+                    data-payer="me" onclick="handleModalPayerSelect('me')">
+                    <span class="material-symbols-outlined mb-2 text-2xl">person</span>
+                    <span class="text-sm font-bold" id="modalMeAlias">나</span>
+                </button>
+                <button
+                    class="payer-btn flex flex-col items-center justify-center bg-[#15231a] hover:bg-primary/20 hover:border-primary/50 text-slate-300 hover:text-primary transition-all rounded-2xl p-4 border border-[#2a4232]"
+                    data-payer="you" onclick="handleModalPayerSelect('you')">
+                    <span class="material-symbols-outlined mb-2 text-2xl">person_check</span>
+                    <span class="text-sm font-bold" id="modalYouAlias">상대방</span>
+                </button>
+                <button
+                    class="payer-btn flex flex-col items-center justify-center bg-[#15231a] hover:bg-primary/20 hover:border-primary/50 text-slate-300 hover:text-primary transition-all rounded-2xl p-4 border border-[#2a4232]"
+                    data-payer="together" onclick="handleModalPayerSelect('together')">
+                    <span class="material-symbols-outlined mb-2 text-2xl">group</span>
+                    <span class="text-sm font-bold">함께</span>
+                </button>
+            </div>
+        </div>
+        <input id="modalCameraInput" type="file" accept="image/*" capture="environment" class="hidden">
+    </div>
+
+    <!-- Gemini Fullscreen Modal -->
+    <div id="geminiModal"
+        class="fixed inset-0 z-[60] bg-background-light dark:bg-background-dark flex flex-col hidden opacity-0 transition-opacity duration-300">
+        <div class="flex items-center justify-between p-4 border-b border-primary/20 bg-[#1c2e22]">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
+                <h2 class="text-sm font-bold text-white">Gemini 커플 월간 분석</h2>
+            </div>
+            <button id="closeGeminiModal" class="p-2 text-slate-400 hover:text-white transition-colors"><span
+                    class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-[#1c2e22] to-[#121b16]" id="geminiModalContent">
+            <!-- Full Insight Report Goes Here -->
+        </div>
+        <div class="p-4 border-t border-primary/20 bg-background-dark">
+            <button id="downloadGeminiBtn"
+                class="w-full bg-primary text-black font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] transition-transform">
+                <span class="material-symbols-outlined text-xl">download</span> 보고서 이미지로 저장하기
+            </button>
+        </div>
     </div>
 
     <script type="module" src="./stats.js"></script>

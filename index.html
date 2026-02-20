@@ -45,6 +45,11 @@
             scrollbar-width: none;
         }
     </style>
+
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 </head>
 
 <body
@@ -72,102 +77,129 @@
         </header>
         <main class="flex-1 overflow-y-auto no-scrollbar pb-24 px-6 space-y-6">
 
-            <section class="relative overflow-hidden rounded-2xl bg-[#1c2e22] border border-[#2a4232] shadow-lg">
-                <div
-                    class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl pointer-events-none">
-                </div>
-                <div class="p-5 relative z-10">
-                    <div class="flex justify-between items-start mb-6">
-                        <div>
-                            <p class="text-sm font-medium text-slate-400 mb-1">우리 이번 달 총 지출</p>
-                            <h2 id="totalExp" class="text-3xl font-extrabold tracking-tight text-white">0원</h2>
-                        </div>
-                        <div class="bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
-                            <span id="sharedPercentage" class="text-xs font-bold text-red-500">공동 0%</span>
-                        </div>
-                    </div>
-                    <div class="space-y-2 mb-6">
-                        <div class="flex justify-between text-xs font-medium">
-                            <span class="text-slate-300">공동 예산 <span id="budgetAlert"
-                                    class="hidden text-red-400 font-bold">(초과 경고!)</span></span>
-                            <span class="text-white"><span id="totalExpSmall">0</span> / 1,500,000원</span>
-                        </div>
-                        <div class="h-3 w-full bg-slate-800 rounded-full overflow-hidden">
-                            <div id="budgetBar"
-                                class="h-full bg-gradient-to-r from-primary to-[#0fb845] rounded-full w-[0%] shadow-[0_0_10px_rgba(19,236,91,0.4)] transition-all">
-                            </div>
-                        </div>
-                        <p class="text-xs text-slate-500 text-right pt-1">예산 잔액: <span id="budgetLeft"
-                                class="text-primary font-bold">1,500,000원</span></p>
-                    </div>
+            <main class="flex-1 overflow-y-auto no-scrollbar pb-24 px-6 space-y-6">
+
+                <!-- Home View (Main Input Focus) -->
+                <div id="homeView" class="flex flex-col gap-4 animate-fade-in pt-8">
+                    <!-- Top Row: Camera & Upload (1:1 Ratio) -->
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-[#15231a] p-3 rounded-xl border border-[#2a4232]">
-                            <div class="flex items-center gap-2 mb-1">
-                                <div
-                                    class="w-6 h-6 rounded-full bg-slate-600/20 flex items-center justify-center text-slate-400">
-                                    <span class="material-symbols-outlined text-[14px]">person</span>
-                                </div>
-                                <span class="text-xs text-slate-400">내 결제</span>
+                        <button id="cameraBtn"
+                            class="bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-3xl aspect-square flex flex-col items-center justify-center gap-3 transition-colors group">
+                            <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden">
+                            <div
+                                class="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-active:scale-95 transition-transform">
+                                <span
+                                    class="material-symbols-outlined text-background-dark font-bold text-3xl">photo_camera</span>
                             </div>
-                            <p id="meExp" class="text-lg font-bold text-white pl-1">0원</p>
-                        </div>
-                        <div class="bg-[#15231a] p-3 rounded-xl border border-[#2a4232]">
-                            <div class="flex items-center gap-2 mb-1">
-                                <div
-                                    class="w-6 h-6 rounded-full bg-slate-600/20 flex items-center justify-center text-slate-400">
-                                    <span class="material-symbols-outlined text-[14px]">person_check</span>
-                                </div>
-                                <span class="text-xs text-slate-400">상대방 결제</span>
+                            <span class="text-sm font-bold text-primary">영수증 촬영</span>
+                        </button>
+
+                        <button id="uploadBtn"
+                            class="bg-[#1c2e22] hover:bg-[#253a2b] border border-[#2a4232] rounded-3xl aspect-square flex flex-col items-center justify-center gap-3 transition-colors group">
+                            <input id="uploadInput" type="file" accept="image/*" class="hidden">
+                            <div
+                                class="w-16 h-16 rounded-full bg-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform text-white">
+                                <span class="material-symbols-outlined text-2xl">upload_file</span>
                             </div>
-                            <p id="youExp" class="text-lg font-bold text-white pl-1">0원</p>
-                        </div>
+                            <span class="text-sm font-bold text-slate-300">사진 업로드</span>
+                        </button>
                     </div>
-                </div>
-            </section>
-            <section>
-                <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                    <label for="camera" class="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
-                        <input id="camera" type="file" accept="image/*" capture="environment" class="hidden">
-                        <div
-                            class="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-active:scale-95 transition-transform">
-                            <span
-                                class="material-symbols-outlined text-background-dark font-bold text-3xl">photo_camera</span>
-                        </div>
-                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300">영수증 촬영</span>
-                    </label>
 
-                    <label for="fileUpload" class="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
-                        <input id="fileUpload" type="file" accept="image/*" class="hidden">
-                        <div
-                            class="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c2e22] border border-slate-100 dark:border-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform">
-                            <span class="material-symbols-outlined text-primary text-2xl">upload_file</span>
-                        </div>
-                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300">사진 업로드</span>
-                    </label>
-
+                    <!-- Middle Row: Manual Entry -->
                     <button onclick="window.location.href='/add'"
-                        class="flex flex-col items-center gap-2 min-w-[72px] group">
+                        class="w-full bg-[#1c2e22] hover:bg-[#253a2b] border border-[#2a4232] rounded-2xl p-5 flex items-center justify-center gap-3 transition-colors group mt-2">
                         <div
-                            class="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c2e22] border border-slate-100 dark:border-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform">
-                            <span class="material-symbols-outlined text-primary text-2xl">edit_square</span>
+                            class="w-10 h-10 rounded-full bg-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform text-white">
+                            <span class="material-symbols-outlined text-xl">edit_square</span>
                         </div>
-                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300">수정/수동</span>
+                        <span class="text-sm font-bold text-slate-300">직접 수동 입력하기</span>
                     </button>
-                </div>
-                <div id="scanStatus" class="text-xs text-primary font-bold mt-2 text-center h-4"></div>
-            </section>
 
-            <section class="flex flex-col gap-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">최근 내역</h3>
-                    <a class="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                        href="/calendar">전체 보기</a>
+                    <!-- Bottom Row: Dashboard Toggle -->
+                    <button id="toggleDashboardBtn"
+                        class="w-full bg-slate-800/50 hover:bg-slate-800/80 border border-white/5 rounded-2xl p-4 flex items-center justify-center gap-2 transition-colors mt-8">
+                        <span class="material-symbols-outlined text-slate-400 text-lg">donut_small</span>
+                        <span class="text-xs font-bold text-slate-400">이번 달 잔여 예산 및 지난 내역 보기</span>
+                    </button>
+
+                    <div id="scanStatus" class="text-xs text-primary font-bold mt-2 text-center h-4"></div>
                 </div>
-                <div id="recentList" class="flex flex-col gap-3">
-                    <!-- Transactions appended via JS -->
+
+                <!-- Dashboard View (Overview & List) -->
+                <div id="dashboardView" class="hidden flex-col gap-6 animate-fade-in pt-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-bold text-white tracking-tight">대시보드</h2>
+                        <button id="backToHomeBtn"
+                            class="text-xs text-slate-400 font-medium px-3 py-1.5 bg-white/5 rounded-lg flex items-center gap-1 hover:bg-white/10 transition-colors">
+                            <span class="material-symbols-outlined text-[14px]">arrow_back</span> 돌아가기
+                        </button>
+                    </div>
+                    <section
+                        class="relative overflow-hidden rounded-2xl bg-[#1c2e22] border border-[#2a4232] shadow-lg">
+                        <div
+                            class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl pointer-events-none">
+                        </div>
+                        <div class="p-5 relative z-10">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-400 mb-1">우리 이번 달 총 지출</p>
+                                    <h2 id="totalExp" class="text-3xl font-extrabold tracking-tight text-white">0원</h2>
+                                </div>
+                                <div class="bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
+                                    <span id="sharedPercentage" class="text-xs font-bold text-red-500">공동 0%</span>
+                                </div>
+                            </div>
+                            <div class="space-y-2 mb-6">
+                                <div class="flex justify-between text-xs font-medium">
+                                    <span class="text-slate-300">공동 예산 <span id="budgetAlert"
+                                            class="hidden text-red-400 font-bold">(초과 경고!)</span></span>
+                                    <span class="text-white"><span id="totalExpSmall">0</span> / 1,500,000원</span>
+                                </div>
+                                <div class="h-3 w-full bg-slate-800 rounded-full overflow-hidden">
+                                    <div id="budgetBar"
+                                        class="h-full bg-gradient-to-r from-primary to-[#0fb845] rounded-full w-[0%] shadow-[0_0_10px_rgba(19,236,91,0.4)] transition-all">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500 text-right pt-1">예산 잔액: <span id="budgetLeft"
+                                        class="text-primary font-bold">1,500,000원</span></p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-[#15231a] p-3 rounded-xl border border-[#2a4232]">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <div
+                                            class="w-6 h-6 rounded-full bg-slate-600/20 flex items-center justify-center text-slate-400">
+                                            <span class="material-symbols-outlined text-[14px]">person</span>
+                                        </div>
+                                        <span class="text-xs text-slate-400">내 결제</span>
+                                    </div>
+                                    <p id="meExp" class="text-lg font-bold text-white pl-1">0원</p>
+                                </div>
+                                <div class="bg-[#15231a] p-3 rounded-xl border border-[#2a4232]">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <div
+                                            class="w-6 h-6 rounded-full bg-slate-600/20 flex items-center justify-center text-slate-400">
+                                            <span class="material-symbols-outlined text-[14px]">person_check</span>
+                                        </div>
+                                        <span class="text-xs text-slate-400">상대방 결제</span>
+                                    </div>
+                                    <p id="youExp" class="text-lg font-bold text-white pl-1">0원</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">최근 내역</h3>
+                            <a class="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                                href="/calendar">전체 보기</a>
+                        </div>
+                        <div id="recentList" class="flex flex-col gap-3">
+                            <!-- Transactions appended via JS -->
+                        </div>
+                    </section>
                 </div>
-            </section>
-            <div class="h-6"></div>
+
+            </main>
         </main>
         <nav
             class="sticky bottom-0 z-30 w-full border-t border-slate-200 dark:border-[#2a4232] bg-background-light dark:bg-[#15231a] px-2 pb-5 pt-3 backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95">

@@ -1,4 +1,4 @@
-import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight } from './app.js';
+import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias } from './app.js';
 
 const colors = [
     { name: 'green', code: '#13ec5b', fill: 'bg-[#13ec5b]/20 text-[#13ec5b]' },
@@ -11,6 +11,7 @@ const colors = [
 ];
 
 let cur = new Date();
+let currentMode = 'cat'; // 'cat' or 'payer'
 
 function render() {
     const month = ym(cur);
@@ -24,16 +25,17 @@ function render() {
     let youAmt = 0;
     let togetherAmt = 0;
 
-    // category aggregation
+    // category vs payer mode
     const catMap = {};
+    const payerMap = { 'me': 0, 'you': 0, 'together': 0 };
 
     tx.forEach(t => {
         const amt = Number(t.amount || 0);
         total += amt;
 
-        if (t.payer === 'me') meAmt += amt;
-        else if (t.payer === 'you') youAmt += amt;
-        else if (t.payer === 'together') togetherAmt += amt;
+        if (t.payer === 'me') payerMap['me'] += amt;
+        else if (t.payer === 'you') payerMap['you'] += amt;
+        else if (t.payer === 'together') payerMap['together'] += amt;
 
         const cat = t.category || '기타';
         catMap[cat] = (catMap[cat] || 0) + amt;
@@ -41,7 +43,17 @@ function render() {
 
     document.getElementById('sumDisplay').textContent = won(total);
 
-    const rows = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+    let rows = [];
+    if (currentMode === 'cat') {
+        rows = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+    } else {
+        const payerNames = {
+            'me': getMeAlias(),
+            'you': getYouAlias(),
+            'together': '함께'
+        };
+        rows = Object.entries(payerMap).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]).map(r => [payerNames[r[0]], r[1]]);
+    }
 
     // Build AI Insight UI
     const aiInsightBox = document.getElementById('aiInsightBox');
@@ -65,17 +77,44 @@ function render() {
             lockMsg = "해당 월이 종료된 후, 다음 달 1일에 리포트를 생성할 수 있습니다!";
         }
 
+        const geminiModal = document.getElementById('geminiModal');
+        const geminiModalContent = document.getElementById('geminiModalContent');
+
         if (cached) {
-            aiInsightResult.innerHTML = cached;
+            aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 지출 리포트가 완성되었습니다. 언제든지 다시 확인하세요!</p>';
             btnAiInsight.disabled = false;
-            btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">refresh</span> <span>다시 분석하기</span>';
-            btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/50 hover:bg-slate-800/70 text-slate-400 transition-colors text-xs font-bold py-3 rounded-xl border border-white/10 flex items-center justify-center gap-2 shadow-sm";
+            btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">visibility</span> <span>이번 달 리포트 훔쳐보기</span>';
+            btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
+
+            btnAiInsight.onclick = () => {
+                geminiModalContent.innerHTML = cached;
+                geminiModal.classList.remove('hidden');
+                setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
+            };
         } else {
             if (canGenerate) {
                 aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 지출 데이터가 모두 모였습니다. 객관적이고 예리한 AI의 소비 패턴 분석을 시작해보세요!</p>';
                 btnAiInsight.disabled = false;
                 btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">magic_button</span> <span>이번 달 리포트 생성하기 (월 1회 권장)</span>';
                 btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
+
+                btnAiInsight.onclick = async () => {
+                    btnAiInsight.disabled = true;
+                    btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> <span>분석 중... (약 5-10초 소요)</span>';
+                    try {
+                        const resHtml = await generateMonthlyInsight(month, tx);
+                        localStorage.setItem(cacheKey, resHtml);
+                        geminiModalContent.innerHTML = resHtml;
+                        render(); // update button state
+                        geminiModal.classList.remove('hidden');
+                        setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
+                    } catch (err) {
+                        alert(err.message);
+                        render();
+                    } finally {
+                        btnAiInsight.disabled = false;
+                    }
+                };
             } else {
                 aiInsightResult.innerHTML = `<p class="text-xs text-slate-400 leading-relaxed font-normal">${lockMsg}</p>`;
                 btnAiInsight.disabled = true;
@@ -83,20 +122,23 @@ function render() {
                 btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm";
             }
         }
+    }
 
-        btnAiInsight.onclick = async () => {
-            btnAiInsight.disabled = true;
-            btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> <span>분석 중... (약 5-10초 소요)</span>';
-            try {
-                const resHtml = await generateMonthlyInsight(month, tx);
-                localStorage.setItem(cacheKey, resHtml);
-                render();
-            } catch (err) {
-                alert(err.message);
-                render();
-            } finally {
-                btnAiInsight.disabled = false;
-            }
+    // Modal Events
+    const geminiModal = document.getElementById('geminiModal');
+    if (geminiModal) {
+        document.getElementById('closeGeminiModal').onclick = () => {
+            geminiModal.classList.add('opacity-0');
+            setTimeout(() => geminiModal.classList.add('hidden'), 300);
+        };
+        document.getElementById('downloadGeminiBtn').onclick = () => {
+            const content = document.getElementById('geminiModalContent');
+            html2canvas(content, { backgroundColor: '#131e16' }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Gemini_월간분석_${month}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
         };
     }
 
@@ -158,5 +200,31 @@ function render() {
 
 document.getElementById('prevBtn').onclick = () => { cur.setMonth(cur.getMonth() - 1); render(); };
 document.getElementById('nextBtn').onclick = () => { cur.setMonth(cur.getMonth() + 1); render(); };
+
+const modeCat = document.getElementById('modeCat');
+const modePayer = document.getElementById('modePayer');
+const modeBg = document.getElementById('modeBg');
+
+if (modeCat && modePayer && modeBg) {
+    modeCat.onclick = () => {
+        currentMode = 'cat';
+        modeBg.style.transform = 'translateX(0)';
+        modeCat.classList.replace('text-slate-600', 'text-black');
+        modeCat.classList.replace('dark:text-slate-400', 'dark:text-background-dark');
+        modePayer.classList.replace('text-black', 'text-slate-600');
+        modePayer.classList.replace('dark:text-background-dark', 'dark:text-slate-400');
+        render();
+    };
+
+    modePayer.onclick = () => {
+        currentMode = 'payer';
+        modeBg.style.transform = 'translateX(100%)';
+        modePayer.classList.replace('text-slate-600', 'text-black');
+        modePayer.classList.replace('dark:text-slate-400', 'dark:text-background-dark');
+        modeCat.classList.replace('text-black', 'text-slate-600');
+        modeCat.classList.replace('dark:text-background-dark', 'dark:text-slate-400');
+        render();
+    };
+}
 
 render();
