@@ -125,37 +125,35 @@
             </section>
             <section>
                 <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                    <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                        <label for="camera" class="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
-                            <input id="camera" type="file" accept="image/*" capture="environment" class="hidden">
-                            <div
-                                class="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-active:scale-95 transition-transform">
-                                <span
-                                    class="material-symbols-outlined text-background-dark font-bold text-3xl">photo_camera</span>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600 dark:text-slate-300">영수증 촬영</span>
-                        </label>
+                    <label for="camera" class="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
+                        <input id="camera" type="file" accept="image/*" capture="environment" class="hidden">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-active:scale-95 transition-transform">
+                            <span
+                                class="material-symbols-outlined text-background-dark font-bold text-3xl">photo_camera</span>
+                        </div>
+                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300">영수증 촬영</span>
+                    </label>
 
-                        <label for="fileUpload"
-                            class="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
-                            <input id="fileUpload" type="file" accept="image/*" class="hidden">
-                            <div
-                                class="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c2e22] border border-slate-100 dark:border-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform">
-                                <span class="material-symbols-outlined text-primary text-2xl">upload_file</span>
-                            </div>
-                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">사진 업로드</span>
-                        </label>
+                    <label for="fileUpload" class="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
+                        <input id="fileUpload" type="file" accept="image/*" class="hidden">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c2e22] border border-slate-100 dark:border-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-primary text-2xl">upload_file</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300">사진 업로드</span>
+                    </label>
 
-                        <button onclick="window.location.href='/add'"
-                            class="flex flex-col items-center gap-2 min-w-[72px] group">
-                            <div
-                                class="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c2e22] border border-slate-100 dark:border-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform">
-                                <span class="material-symbols-outlined text-primary text-2xl">edit_square</span>
-                            </div>
-                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">수정/수동</span>
-                        </button>
-                    </div>
-                    <div id="scanStatus" class="text-xs text-primary font-bold mt-2 text-center h-4"></div>
+                    <button onclick="window.location.href='/add'"
+                        class="flex flex-col items-center gap-2 min-w-[72px] group">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c2e22] border border-slate-100 dark:border-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-primary text-2xl">edit_square</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300">수정/수동</span>
+                    </button>
+                </div>
+                <div id="scanStatus" class="text-xs text-primary font-bold mt-2 text-center h-4"></div>
             </section>
 
             <section class="flex flex-col gap-4">
