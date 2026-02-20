@@ -1,4 +1,4 @@
-import { getKey, getTx, addTx, deleteTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
+import { getKey, getTx, addTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
 
 const BUDGET = getBudget();
 
@@ -62,7 +62,7 @@ if (recentTx.length === 0) {
         }
 
         return `
-    <div class="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-[#1c2e22] border border-transparent dark:border-[#2a4232] hover:border-primary/30 transition-all">
+    <a href="/add?id=${t.id}" class="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-[#1c2e22] border border-transparent dark:border-[#2a4232] hover:border-primary/30 transition-all cursor-pointer active:scale-[0.98]">
         <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-xl ${catInfo.bgColor} flex items-center justify-center ${catInfo.textColor}">
                 <span class="material-symbols-outlined">${catInfo.icon}</span>
@@ -77,24 +77,10 @@ if (recentTx.length === 0) {
         </div>
         <div class="flex items-center gap-2">
             <span class="font-bold text-slate-900 dark:text-white whitespace-nowrap">-₩${Number(t.amount || 0).toLocaleString()}</span>
-            <button class="delete-tx-btn p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" data-id="${t.id}">
-                <span class="material-symbols-outlined text-[18px]">delete</span>
-            </button>
+            <span class="material-symbols-outlined text-[16px] text-slate-500">chevron_right</span>
         </div>
-    </div>`;
+    </a>`;
     }).join('');
-
-    recentList.addEventListener('click', async (e) => {
-        const delBtn = e.target.closest('.delete-tx-btn');
-        if (!delBtn) return;
-        if (!confirm('이 내역을 삭제하시겠습니까?')) return;
-        try {
-            await deleteTx(Number(delBtn.dataset.id));
-            location.reload();
-        } catch (err) {
-            alert('삭제 실패: ' + err.message);
-        }
-    });
 }
 
 // Modal elements

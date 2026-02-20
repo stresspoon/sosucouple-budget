@@ -1,4 +1,4 @@
-import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, deleteTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
+import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
 
 let cur = new Date();
 const drawer = document.getElementById('dayDrawer');
@@ -112,7 +112,7 @@ function showDay(dateStr, txList, totalDayAmt) {
         // Generate inner items (세부 내역) if any
         let itemsHtml = '';
         if (t.items && t.items.length > 0) {
-            itemsHtml = `<div class="w-full mt-2 pl-2 border-l border-white/10 space-y-1 hidden group-hover/item:block">` +
+            itemsHtml = `<div class="w-full mt-2 pl-2 border-l border-white/10 space-y-1">` +
                 t.items.map(item => `
             <div class="flex justify-between text-[11px] text-text-muted">
                 <span>- ${escapeHtml(item.name)}</span>
@@ -122,7 +122,7 @@ function showDay(dateStr, txList, totalDayAmt) {
         }
 
         return `
-<div class="group/item py-2 border-b border-white/5 last:border-0 cursor-pointer">
+<a href="/add?id=${t.id}" class="block py-2 border-b border-white/5 last:border-0 cursor-pointer active:bg-white/5 rounded-lg transition-colors">
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl ${c.bgColor} flex items-center justify-center ${c.textColor}">
@@ -138,30 +138,13 @@ function showDay(dateStr, txList, totalDayAmt) {
         </div>
         <div class="flex items-center gap-2">
             <p class="text-white font-bold text-sm whitespace-nowrap">-₩${Number(t.amount || 0).toLocaleString()}</p>
-            <button class="delete-tx-btn p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" data-id="${t.id}">
-                <span class="material-symbols-outlined text-[16px]">delete</span>
-            </button>
+            <span class="material-symbols-outlined text-[14px] text-slate-500">chevron_right</span>
         </div>
     </div>
     ${itemsHtml}
-    ${t.items?.length > 0 ? `<div class="text-[10px] text-primary/70 text-right mt-1 opacity-70 group-hover/item:hidden">세부 내역 보기</div>` : ''}
-</div>
+</a>
 `;
     }).join('');
-
-    // Delete handler
-    listE.addEventListener('click', async (e) => {
-        const delBtn = e.target.closest('.delete-tx-btn');
-        if (!delBtn) return;
-        if (!confirm('이 내역을 삭제하시겠습니까?')) return;
-        try {
-            await deleteTx(Number(delBtn.dataset.id));
-            closeDrawer();
-            render();
-        } catch (err) {
-            alert('삭제 실패: ' + err.message);
-        }
-    });
 }
 
 
