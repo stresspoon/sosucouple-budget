@@ -69,6 +69,12 @@ export async function addTx(t) {
   if (error) throw new Error(error.message || '저장에 실패했습니다.');
 }
 
+export async function deleteTx(id) {
+  if (!supabase) throw new Error('데이터베이스에 연결할 수 없습니다.');
+  const { error } = await supabase.from('transactions').delete().eq('id', id);
+  if (error) throw new Error(error.message || '삭제에 실패했습니다.');
+}
+
 export async function clearTx() {
   if (!supabase) return;
   const { error } = await supabase.from('transactions').delete().neq('payer', 'invalid_payer');

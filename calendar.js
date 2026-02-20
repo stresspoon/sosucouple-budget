@@ -1,4 +1,4 @@
-import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
+import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, deleteTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
 
 let cur = new Date();
 const drawer = document.getElementById('dayDrawer');
@@ -136,8 +136,11 @@ function showDay(dateStr, txList, totalDayAmt) {
                 <span class="text-text-muted text-[11px]">${t.category}</span>
             </div>
         </div>
-        <div class="text-right">
-            <p class="text-white font-bold text-sm">-₩${Number(t.amount || 0).toLocaleString()}</p>
+        <div class="flex items-center gap-2">
+            <p class="text-white font-bold text-sm whitespace-nowrap">-₩${Number(t.amount || 0).toLocaleString()}</p>
+            <button class="delete-tx-btn p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" data-id="${t.id}">
+                <span class="material-symbols-outlined text-[16px]">delete</span>
+            </button>
         </div>
     </div>
     ${itemsHtml}
@@ -145,6 +148,20 @@ function showDay(dateStr, txList, totalDayAmt) {
 </div>
 `;
     }).join('');
+
+    // Delete handler
+    listE.addEventListener('click', async (e) => {
+        const delBtn = e.target.closest('.delete-tx-btn');
+        if (!delBtn) return;
+        if (!confirm('이 내역을 삭제하시겠습니까?')) return;
+        try {
+            await deleteTx(Number(delBtn.dataset.id));
+            closeDrawer();
+            render();
+        } catch (err) {
+            alert('삭제 실패: ' + err.message);
+        }
+    });
 }
 
 
