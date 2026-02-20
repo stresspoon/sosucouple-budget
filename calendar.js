@@ -1,4 +1,4 @@
-import { getTx, won, ym, getCatIconInfo } from './app.js';
+import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey } from './app.js';
 
 let cur = new Date();
 const drawer = document.getElementById('dayDrawer');
@@ -149,5 +149,33 @@ function showDay(dateStr, txList, totalDayAmt) {
 
 document.getElementById('prevBtn').onclick = () => { cur.setMonth(cur.getMonth() - 1); render(); };
 document.getElementById('nextBtn').onclick = () => { cur.setMonth(cur.getMonth() + 1); render(); };
+
+// Payer modal handler for camera FAB
+let selectedPayer = 'me';
+window.handleModalPayerSelect = (payer) => {
+    selectedPayer = payer;
+    const modal = document.getElementById('payerModal');
+    const content = document.getElementById('payerModalContent');
+    modal.classList.add('opacity-0');
+    content.classList.add('translate-y-full');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+    document.getElementById('modalCameraInput').click();
+};
+
+const modalCameraInput = document.getElementById('modalCameraInput');
+if (modalCameraInput) {
+    modalCameraInput.onchange = async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        if (!getKey()) { alert('설정에서 Gemini API 키를 먼저 등록해주세요.'); return; }
+        try {
+            const r = await parseReceiptWithGemini(f, getKey());
+            await addTx({ ...r, payer: selectedPayer, amount: Number(r.amount || 0) });
+            location.reload();
+        } catch (err) {
+            alert('영수증 인식 실패: ' + err.message);
+        }
+    };
+}
 
 render();

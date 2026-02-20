@@ -95,6 +95,25 @@
         </div>
     </main>
 
+    <!-- Day Drawer (Slide-up panel) -->
+    <div id="dayDrawer"
+        class="fixed inset-x-0 bottom-0 z-40 bg-[#1c2e22] border-t border-primary/20 rounded-t-3xl shadow-2xl transform translate-y-full transition-transform duration-300 max-h-[60vh] flex flex-col"
+        style="padding-bottom: max(env(safe-area-inset-bottom, 20px), 20px);">
+        <div class="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+            <div>
+                <h3 id="drawerTitle" class="text-lg font-bold text-white">0월 0일</h3>
+                <p id="drawerTotal" class="text-sm font-bold text-primary mt-0.5">0원</p>
+            </div>
+            <button onclick="closeDrawer()"
+                class="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-xl">close</span>
+            </button>
+        </div>
+        <div id="drawerList" class="flex-1 overflow-y-auto px-5 pb-4 space-y-1">
+            <!-- Transaction items injected by JS -->
+        </div>
+    </div>
+
     <nav
         class="sticky bottom-0 z-30 w-full border-t border-slate-200 dark:border-[#2a4232] bg-background-light dark:bg-[#15231a] px-2 pt-3 backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95" style="padding-bottom: max(env(safe-area-inset-bottom, 20px), 20px);">
         <div class="flex justify-between items-center px-4">

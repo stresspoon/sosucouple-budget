@@ -1,4 +1,4 @@
-import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias } from './app.js';
+import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, parseReceiptWithGemini, addTx, getKey } from './app.js';
 
 const colors = [
     { name: 'green', code: '#13ec5b', fill: 'bg-[#13ec5b]/20 text-[#13ec5b]' },
@@ -242,6 +242,34 @@ if (modeCat && modePayer && modeBg) {
         modeCat.classList.replace('text-black', 'text-slate-600');
         modeCat.classList.replace('dark:text-background-dark', 'dark:text-slate-400');
         render();
+    };
+}
+
+// Payer modal handler for camera FAB
+let selectedPayer = 'me';
+window.handleModalPayerSelect = (payer) => {
+    selectedPayer = payer;
+    const modal = document.getElementById('payerModal');
+    const content = document.getElementById('payerModalContent');
+    modal.classList.add('opacity-0');
+    content.classList.add('translate-y-full');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+    document.getElementById('modalCameraInput').click();
+};
+
+const modalCameraInput = document.getElementById('modalCameraInput');
+if (modalCameraInput) {
+    modalCameraInput.onchange = async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        if (!getKey()) { alert('설정에서 Gemini API 키를 먼저 등록해주세요.'); return; }
+        try {
+            const r = await parseReceiptWithGemini(f, getKey());
+            await addTx({ ...r, payer: selectedPayer, amount: Number(r.amount || 0) });
+            location.reload();
+        } catch (err) {
+            alert('영수증 인식 실패: ' + err.message);
+        }
     };
 }
 

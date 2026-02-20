@@ -157,8 +157,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    document.getElementById('camera').onchange = handleScan;
-    document.getElementById('fileUpload').onchange = handleScan;
+    document.getElementById('cameraInput').onchange = handleScan;
+    document.getElementById('uploadInput').onchange = handleScan;
 
     // View Toggle Logic
     const homeView = document.getElementById('homeView');
