@@ -127,16 +127,23 @@
             </section>
 
             <section
-                class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5 space-y-4">
-                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-white/5 pb-3">
-                    <span class="material-symbols-outlined text-red-500">delete_forever</span>
-                    <h2 class="text-lg font-bold">데이터 관리</h2>
+                class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-3 cursor-pointer"
+                    onclick="document.getElementById('resetDataContainer').classList.toggle('hidden')">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-red-500">delete_forever</span>
+                        <h2 class="text-lg font-bold">데이터 관리</h2>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-400">expand_more</span>
                 </div>
-                <button id="resetDataBtn"
-                    class="w-full bg-red-500/10 text-red-500 font-bold px-4 py-3 rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2">
-                    <span>모든 내역 초기화</span>
-                </button>
-                <p class="text-[11px] text-slate-400 mt-2 text-center">모든 가계부 내역이 삭제되며 복구할 수 없습니다.</p>
+                <div id="resetDataContainer" class="hidden space-y-2 mt-4">
+                    <button id="resetDataBtn"
+                        class="w-full bg-red-500/10 text-red-500 font-bold px-4 py-3 rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
+                        onclick="document.getElementById('resetConfirmModal').classList.remove('hidden')">
+                        <span>모든 내역 초기화</span>
+                    </button>
+                    <p class="text-[11px] text-slate-400 mt-2 text-center">모든 가계부 내역이 삭제되며 복구할 수 없습니다.</p>
+                </div>
             </section>
 
             <!-- DB Placeholder for Next Milestone -->
@@ -151,38 +158,97 @@
 
         </main>
         <nav
-            class="absolute bottom-0 w-full border-t border-slate-200 bg-white/90 px-6 pb-6 pt-3 backdrop-blur-md dark:border-white/5 dark:bg-[#15231b]/90 z-20">
-            <div class="flex justify-between">
-                <a class="group flex flex-1 flex-col items-center gap-1" href="/">
+            class="fixed bottom-0 z-40 w-full border-t border-slate-200 dark:border-[#2a4232] bg-background-light dark:bg-[#15231a] px-2 pb-5 pt-3 backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95 text-slate-900 dark:text-slate-100">
+            <div class="flex justify-between items-center px-4">
+                <a class="flex flex-col items-center gap-1 group w-16" href="/">
                     <span
-                        class="material-symbols-outlined text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">home</span>
+                        class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">home</span>
                     <span
-                        class="text-[10px] font-medium text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">홈</span>
+                        class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">홈</span>
                 </a>
-                <a class="group flex flex-1 flex-col items-center gap-1" href="/stats">
+                <a class="flex flex-col items-center gap-1 group w-16" href="/stats">
                     <span
-                        class="material-symbols-outlined text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">donut_small</span>
+                        class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">donut_small</span>
                     <span
-                        class="text-[10px] font-medium text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">통계</span>
+                        class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">통계</span>
                 </a>
-                <div class="relative -top-8 flex flex-1 justify-center">
-                    <button onclick="window.location.href='/add'"
-                        class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800 text-white shadow-lg transition-transform hover:scale-105 active:scale-95 border border-white/10">
-                        <span class="material-symbols-outlined text-3xl">add</span>
+                <div class="relative -top-8 flex w-16 justify-center">
+                    <button
+                        onclick="document.getElementById('payerModal').classList.remove('hidden'); setTimeout(() => { document.getElementById('payerModal').classList.remove('opacity-0'); document.getElementById('payerModalContent').classList.remove('translate-y-full'); }, 10); window.currentUploadAction = 'camera';"
+                        class="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-black shadow-lg shadow-primary/40 transition-transform hover:scale-105 active:scale-95 border-4 border-background-light dark:border-background-dark">
+                        <span class="material-symbols-outlined text-3xl">photo_camera</span>
                     </button>
                 </div>
-                <a class="group flex flex-1 flex-col items-center gap-1" href="/calendar">
+                <a class="flex flex-col items-center gap-1 group w-16" href="/calendar">
                     <span
-                        class="material-symbols-outlined text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">calendar_month</span>
+                        class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">calendar_month</span>
                     <span
-                        class="text-[10px] font-medium text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">달력</span>
+                        class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">달력</span>
                 </a>
-                <a class="group flex flex-1 flex-col items-center gap-1" href="/settings">
-                    <span class="material-symbols-outlined fill-current text-primary">person</span>
+                <a class="flex flex-col items-center gap-1 group w-16" href="/settings">
+                    <div
+                        class="relative flex items-center justify-center p-1 rounded-full transition-colors bg-primary/10">
+                        <span class="material-symbols-outlined text-primary text-[28px] fill-current">person</span>
+                    </div>
                     <span class="text-[10px] font-medium text-primary">설정</span>
                 </a>
             </div>
         </nav>
+
+        <!-- Payer Selection Modal -->
+        <div id="payerModal"
+            class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center hidden opacity-0 transition-opacity">
+            <div class="bg-surface-dark rounded-t-3xl sm:rounded-3xl w-full max-w-md p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl text-slate-100"
+                id="payerModalContent">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">결제자 선택</h3>
+                    <button id="closePayerModalBtn" class="text-slate-400 hover:text-white transition-colors"
+                        onclick="document.getElementById('payerModal').classList.add('opacity-0'); document.getElementById('payerModalContent').classList.add('translate-y-full'); setTimeout(() => document.getElementById('payerModal').classList.add('hidden'), 300);"><span
+                            class="material-symbols-outlined">close</span></button>
+                </div>
+                <p class="text-slate-400 text-sm mb-6">누구의 결제 내역인지 선택해주세요!</p>
+                <div class="grid grid-cols-3 gap-3">
+                    <button
+                        class="payer-btn flex flex-col items-center justify-center bg-[#15231a] hover:bg-primary/20 hover:border-primary/50 text-slate-300 hover:text-primary transition-all rounded-2xl p-4 border border-[#2a4232]"
+                        data-payer="me" onclick="handleModalPayerSelect('me')">
+                        <span class="material-symbols-outlined mb-2 text-2xl">person</span>
+                        <span class="text-sm font-bold" id="modalMeAlias">나</span>
+                    </button>
+                    <button
+                        class="payer-btn flex flex-col items-center justify-center bg-[#15231a] hover:bg-primary/20 hover:border-primary/50 text-slate-300 hover:text-primary transition-all rounded-2xl p-4 border border-[#2a4232]"
+                        data-payer="you" onclick="handleModalPayerSelect('you')">
+                        <span class="material-symbols-outlined mb-2 text-2xl">person_check</span>
+                        <span class="text-sm font-bold" id="modalYouAlias">상대방</span>
+                    </button>
+                    <button
+                        class="payer-btn flex flex-col items-center justify-center bg-[#15231a] hover:bg-primary/20 hover:border-primary/50 text-slate-300 hover:text-primary transition-all rounded-2xl p-4 border border-[#2a4232]"
+                        data-payer="together" onclick="handleModalPayerSelect('together')">
+                        <span class="material-symbols-outlined mb-2 text-2xl">group</span>
+                        <span class="text-sm font-bold">함께</span>
+                    </button>
+                </div>
+            </div>
+            <input id="modalCameraInput" type="file" accept="image/*" capture="environment" class="hidden">
+        </div>
+
+        <!-- Reset Confirmation Modal -->
+        <div id="resetConfirmModal"
+            class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden">
+            <div class="bg-surface-dark rounded-3xl w-full max-w-sm p-6 shadow-2xl m-4 border border-white/10">
+                <div class="flex flex-col items-center mb-6 mt-2 text-slate-100">
+                    <span class="material-symbols-outlined text-red-500 text-5xl mb-4">warning</span>
+                    <h3 class="text-xl font-bold text-white text-center">모든 데이터 초기화</h3>
+                    <p class="text-slate-400 text-sm mt-2 text-center">정말로 모든 가계부 지출 내역을 삭제하시겠습니까? 이 작업은 영구적이며 복구할 수
+                        없습니다.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="document.getElementById('resetConfirmModal').classList.add('hidden')"
+                        class="flex-1 bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-700 transition-colors">취소</button>
+                    <button id="confirmResetBtn"
+                        class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors">삭제</button>
+                </div>
+            </div>
+        </div>
 
         <script type="module">
             import { getKey, setKey, getBudget, setBudget, setTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias } from './app.js';
@@ -219,12 +285,27 @@
                 }
             };
 
-            document.getElementById('resetDataBtn').onclick = () => {
-                if (confirm('모든 가계부 지출 내역을 삭제하시겠습니까? (이 작업은 복구할 수 없습니다.)')) {
-                    setTx([]);
-                    alert('삭제 되었습니다.');
-                }
-            }
+            document.getElementById('confirmResetBtn').onclick = () => {
+                setTx([]);
+                alert('데이터가 완전히 초기화 되었습니다.');
+                document.getElementById('resetConfirmModal').classList.add('hidden');
+                document.getElementById('resetDataContainer').classList.add('hidden');
+            };
+
+            // Payer Modal Logic inside settings
+            window.handleModalPayerSelect = function (payerStr) {
+                document.getElementById('payerModal').classList.add('opacity-0');
+                document.getElementById('payerModalContent').classList.add('translate-y-full');
+                setTimeout(() => document.getElementById('payerModal').classList.add('hidden'), 300);
+
+                const inp = document.getElementById('modalCameraInput');
+                inp.onchange = (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        alert(`${payerStr} 결제 영수증 분석을 시작합니다. (더미 처리)`);
+                    }
+                };
+                inp.click();
+            };
         </script>
 </body>
 

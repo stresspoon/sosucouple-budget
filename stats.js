@@ -64,8 +64,10 @@ function render() {
         aiInsightBox.classList.add('hidden');
     } else {
         aiInsightBox.classList.remove('hidden');
-        const cacheKey = 'gemini_insight_' + month;
+        const cacheKey = 'gemini_insight_v2_' + month;
+        const downloadKey = 'gemini_download_v2_' + month;
         const cached = localStorage.getItem(cacheKey);
+        const isDownloaded = localStorage.getItem(downloadKey) === 'true';
 
         const isTestMode = true; // 임시: 지금 테스트를 위해 항시 열림 상태 유지
         const realCurrentMonth = ym(new Date());
@@ -81,19 +83,26 @@ function render() {
         const geminiModalContent = document.getElementById('geminiModalContent');
 
         if (cached) {
-            aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 지출 리포트가 완성되었습니다. 언제든지 다시 확인하세요!</p>';
-            btnAiInsight.disabled = false;
-            btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">visibility</span> <span>이번 달 리포트 훔쳐보기</span>';
-            btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
+            if (isDownloaded) {
+                aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 리포트를 성공적으로 저장하셨네요! 다음 달 1일에 새로운 분석으로 만나요.</p>';
+                btnAiInsight.disabled = true;
+                btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">hourglass_empty</span> <span>다음 달 리포트를 기다려주세요</span>';
+                btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm border border-white/5";
+            } else {
+                aiInsightResult.innerHTML = '<p class="text-xs text-primary leading-relaxed font-bold">아직 리포트를 보관하기 전이에요! 이미지를 다운로드해서 꼭 소장해보세요.</p>';
+                btnAiInsight.disabled = false;
+                btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">visibility</span> <span>이번 달 리포트 계속 훔쳐보기</span>';
+                btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
 
-            btnAiInsight.onclick = () => {
-                geminiModalContent.innerHTML = cached;
-                geminiModal.classList.remove('hidden');
-                setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
-            };
+                btnAiInsight.onclick = () => {
+                    geminiModalContent.innerHTML = cached;
+                    geminiModal.classList.remove('hidden');
+                    setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
+                };
+            }
         } else {
             if (canGenerate) {
-                aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 지출 데이터가 모두 모였습니다. 객관적이고 예리한 AI의 소비 패턴 분석을 시작해보세요!</p>';
+                aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">최신 데이터로 준비를 마쳤습니다! 아래 버튼을 눌러 새로워진 AI 분석 리포트를 확인해보세요.</p>';
                 btnAiInsight.disabled = false;
                 btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">magic_button</span> <span>이번 달 리포트 생성하기 (월 1회 권장)</span>';
                 btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
@@ -119,7 +128,7 @@ function render() {
                 aiInsightResult.innerHTML = `<p class="text-xs text-slate-400 leading-relaxed font-normal">${lockMsg}</p>`;
                 btnAiInsight.disabled = true;
                 btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">lock</span> <span>다음 달 오픈 예정</span>';
-                btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm";
+                btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm border border-white/5";
             }
         }
     }
@@ -129,15 +138,23 @@ function render() {
     if (geminiModal) {
         document.getElementById('closeGeminiModal').onclick = () => {
             geminiModal.classList.add('opacity-0');
-            setTimeout(() => geminiModal.classList.add('hidden'), 300);
+            setTimeout(() => {
+                geminiModal.classList.add('hidden');
+                render(); // Reload outer states immediately once it's closed
+            }, 300);
         };
         document.getElementById('downloadGeminiBtn').onclick = () => {
             const content = document.getElementById('geminiModalContent');
+            const cacheKey = 'gemini_download_v2_' + month;
             html2canvas(content, { backgroundColor: '#131e16' }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `Gemini_월간분석_${month}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+
+                localStorage.setItem(cacheKey, 'true');
+                alert("리포트가 이미지로 저장되었습니다!\n모달을 닫으시면 새로 생성 버튼이 잠깁니다.");
+                document.getElementById('closeGeminiModal').click();
             });
         };
     }
