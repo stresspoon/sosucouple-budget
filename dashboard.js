@@ -1,15 +1,15 @@
-import { getKey, getTx, setTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, loadDummyData, getMeAlias, getYouAlias } from './app.js';
+import { getKey, getTx, addTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, loadDummyData, getMeAlias, getYouAlias } from './app.js';
 
 const BUDGET = getBudget();
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Data Load
     const m = ym();
-    const allTx = getTx();
+    const allTx = await getTx();
 
     // load dummy data for insight testing if DB empty
     if (allTx.length === 0) {
-        loadDummyData();
+        await loadDummyData();
         return;
     }
 
@@ -148,9 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         scanStatus.textContent = '영수증 인식 중입니다...';
         try {
             const r = await parseReceiptWithGemini(f, getKey());
-            const updatedTx = getTx();
-            updatedTx.push({ ...r, payer: selectedTempPayer, amount: Number(r.amount || 0), created_at: new Date().toISOString() });
-            setTx(updatedTx);
+            await addTx({ ...r, payer: selectedTempPayer, amount: Number(r.amount || 0) });
             scanStatus.textContent = '저장 성공! 새로고침합니다.';
             setTimeout(() => location.reload(), 1000);
         } catch (err) {

@@ -251,7 +251,7 @@
         </div>
 
         <script type="module">
-            import { getKey, setKey, getBudget, setBudget, setTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias } from './app.js';
+            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias } from './app.js';
 
             const meInp = document.getElementById('meAliasInput');
             const youInp = document.getElementById('youAliasInput');
@@ -285,8 +285,8 @@
                 }
             };
 
-            document.getElementById('confirmResetBtn').onclick = () => {
-                setTx([]);
+            document.getElementById('confirmResetBtn').onclick = async () => {
+                await clearTx();
                 alert('데이터가 완전히 초기화 되었습니다.');
                 document.getElementById('resetConfirmModal').classList.add('hidden');
                 document.getElementById('resetDataContainer').classList.add('hidden');

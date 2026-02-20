@@ -206,7 +206,7 @@
     </div>
 
     <script type="module">
-        import { getTx, setTx, ymd, won } from './app.js';
+        import { addTx, ymd, won } from './app.js';
 
         let currentAmountStr = "0";
         const amtDisp = document.getElementById('amountDisplay');
@@ -264,7 +264,7 @@
             updateDisp();
         };
 
-        saveBtn.onclick = () => {
+        saveBtn.onclick = async () => {
             const amt = Number(currentAmountStr);
             if (amt <= 0) return;
 
@@ -277,12 +277,11 @@
                 category: catSelect.value,
                 merchant: merch.value.trim() || '미분류',
                 payer: payer,
-                created_at: new Date().toISOString()
+                memo: '',
+                items: []
             };
 
-            const tx = getTx();
-            tx.push(obj);
-            setTx(tx);
+            await addTx(obj);
 
             // reset and go back
             window.location.href = '/';

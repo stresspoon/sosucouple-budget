@@ -13,12 +13,13 @@ const colors = [
 let cur = new Date();
 let currentMode = 'cat'; // 'cat' or 'payer'
 
-function render() {
+async function render() {
     const month = ym(cur);
     document.getElementById('yearDisplay').textContent = `${cur.getFullYear()}년`;
     document.getElementById('monthDisplay').textContent = `${cur.getMonth() + 1}월`;
 
-    const tx = getTx().filter(t => t.tx_date?.startsWith(month));
+    const allTx = await getTx();
+    const tx = allTx.filter(t => t.tx_date?.startsWith(month));
 
     let total = 0;
     let meAmt = 0;

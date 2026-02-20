@@ -7,12 +7,12 @@ window.closeDrawer = () => {
     drawer.classList.add('translate-y-full');
 };
 
-function render() {
+async function render() {
     const month = ym(cur);
     const mStr = `${cur.getFullYear()}년 ${cur.getMonth() + 1}월`;
     document.getElementById('monthTitle').textContent = mStr;
 
-    const allTx = getTx();
+    const allTx = await getTx();
     const currTx = allTx.filter(t => t.tx_date?.startsWith(month));
 
     let totalMonth = 0;

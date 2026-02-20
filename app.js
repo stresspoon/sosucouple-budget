@@ -1,6 +1,44 @@
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+let supabase = null;
+try {
+  const envRes = await fetch('/api/env');
+  if (envRes.ok) {
+    const env = await envRes.json();
+    if (env.supabaseUrl && env.supabaseAnonKey) {
+      supabase = createClient(env.supabaseUrl, env.supabaseAnonKey);
+    }
+  }
+} catch (e) {
+  console.warn("Supabase init failed.", e);
+}
+
 const KEY = 'gemini_api_key';
 const TX = 'ledger_transactions_v2';
 const CATS = ['식비', '카페', '교통', '쇼핑', '의료', '주거', '문화생활', '기타'];
+
+// Run 1-time migration from localStorage
+if (supabase) {
+  const oldDataStr = localStorage.getItem(TX);
+  if (oldDataStr) {
+    try {
+      const oldArr = JSON.parse(oldDataStr);
+      if (Array.isArray(oldArr) && oldArr.length > 0) {
+        const inserts = oldArr.map(t => ({
+          tx_date: t.tx_date || new Date().toISOString().split('T')[0],
+          amount: Number(t.amount) || 0,
+          category: t.category || '기타',
+          merchant: t.merchant || '미상',
+          payer: t.payer || 'me',
+          memo: t.memo || '',
+          items: t.items || []
+        }));
+        await supabase.from('transactions').insert(inserts);
+      }
+      localStorage.removeItem(TX);
+    } catch (e) { console.error("Migration error", e); localStorage.removeItem(TX); }
+  }
+}
 
 export function getKey() { return localStorage.getItem(KEY) || ''; }
 export function setKey(v) { localStorage.setItem(KEY, v || ''); }
@@ -14,19 +52,27 @@ export function setMeAlias(v) { localStorage.setItem('alias_me', v || '나'); }
 export function getYouAlias() { return localStorage.getItem('alias_you') || '상대방'; }
 export function setYouAlias(v) { localStorage.setItem('alias_you', v || '상대방'); }
 
-export function getTx() {
-  try {
-    const data = JSON.parse(localStorage.getItem(TX) || '[]');
-    return data.map(t => ({
-      ...t,
-      payer: t.payer || 'me',
-      items: t.items || [] // 세부 내역 항목 배열 기본값 추가
-    }));
-  } catch {
-    return [];
-  }
+export async function getTx() {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('transactions')
+    .select('*')
+    .order('tx_date', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) { console.error(error); return []; }
+  return data || [];
 }
-export function setTx(arr) { localStorage.setItem(TX, JSON.stringify(arr || [])); }
+
+export async function addTx(t) {
+  if (!supabase) return;
+  const { error } = await supabase.from('transactions').insert([t]);
+  if (error) console.error(error);
+}
+
+export async function clearTx() {
+  if (!supabase) return;
+  const { error } = await supabase.from('transactions').delete().neq('payer', 'invalid_payer');
+  if (error) console.error(error);
+}
 export function won(n) { return Number(n || 0).toLocaleString('ko-KR'); }
 export function ym(d) { return (d || new Date()).toISOString().slice(0, 7); }
 export function ymd(d) {
@@ -42,8 +88,8 @@ export function getPayerLabel(payer) {
   return getMeAlias();
 }
 
-export function loadDummyData() {
-  const d = getTx();
+export async function loadDummyData() {
+  const d = await getTx();
   if (d.length > 0) return;
   const m = ym();
   const dummy = [
@@ -55,8 +101,10 @@ export function loadDummyData() {
     { tx_date: `${m}-25`, merchant: "돼지게티", amount: 24000, category: "식비", payer: "me", memo: "", items: [] },
     { tx_date: `${m}-28`, merchant: "택시비", amount: 11000, category: "교통", payer: "you", memo: "", items: [] },
   ];
-  setTx(dummy);
-  location.reload();
+  if (supabase) {
+    await supabase.from('transactions').insert(dummy);
+    location.reload();
+  }
 }
 
 export const catIconRecord = {
