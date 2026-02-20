@@ -1,1 +1,359 @@
-<!doctype html><html class="dark" lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>자산 현황</title><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"></script><script>tailwind.config={darkMode:'class'}</script></head><body class="bg-[#102216] text-slate-100" style="font-family:Manrope,sans-serif"><div class="max-w-md mx-auto min-h-screen pb-24 px-5 pt-8"><h1 class="text-2xl font-extrabold mb-4">영수증 자동 가계부</h1><div class="bg-[#1c2e22] rounded-2xl p-4 border border-[#2a4232] mb-4"><div class="text-xs text-slate-400 mb-2">Gemini API Key</div><div class="flex gap-2"><input id="apiKey" type="password" class="flex-1 rounded-xl bg-[#15231a] border-[#2a4232] text-white px-3 py-2" placeholder="AI..."/><button id="saveKey" class="px-3 rounded-xl bg-[#13ec5b] text-black font-bold">저장</button></div></div><div class="bg-[#1c2e22] rounded-2xl p-5 border border-[#2a4232] mb-4"><p class="text-sm text-slate-400 mb-1">이번 달 지출</p><h2 id="total" class="text-3xl font-extrabold">-0원</h2><div class="mt-3 grid grid-cols-3 gap-2 text-center"><div class="bg-[#15231a] p-3 rounded-xl"><div class="text-xs text-slate-400">입금</div><div>+0원</div></div><div class="bg-[#15231a] p-3 rounded-xl"><div class="text-xs text-slate-400">지출</div><div id="spend">-0원</div></div><div class="bg-[#15231a] p-3 rounded-xl"><div class="text-xs text-slate-400">잔액</div><div id="bal">0원</div></div></div></div><div class="bg-[#1c2e22] rounded-2xl p-4 border border-[#2a4232]"><h3 class="font-bold mb-2">최근 내역</h3><div id="recent" class="space-y-2 text-sm"></div></div></div><nav class="fixed bottom-0 inset-x-0 bg-[#15231a] border-t border-[#2a4232]"><div class="max-w-md mx-auto grid grid-cols-4 py-3 text-center text-sm font-semibold"><a class="text-[#13ec5b]" href="/">홈</a><a href="/calendar">달력</a><a href="/stats">통계</a><a href="/add">추가</a></div></nav><script type="module">import {getKey,setKey,getTx,won,ym} from './app.js'; const m=ym(); const key=document.getElementById('apiKey'); key.value=getKey(); document.getElementById('saveKey').onclick=()=>{setKey(key.value.trim()); location.reload();}; const tx=getTx().filter(t=>t.tx_date?.startsWith(m)); const total=tx.reduce((s,t)=>s+Number(t.amount||0),0); document.getElementById('total').textContent='-'+won(total); document.getElementById('spend').textContent='-'+won(total); document.getElementById('bal').textContent='-'+won(total); document.getElementById('recent').innerHTML=tx.slice().reverse().slice(0,6).map(t=>`<div class='flex justify-between bg-[#15231a] rounded-xl px-3 py-2'><span>${t.merchant||'미분류'} <span class='text-slate-400 text-xs'>${t.tx_date}</span></span><b>-${won(t.amount)}</b></div>`).join('')||'<div class="text-slate-400">내역 없음</div>';</script></body></html>
+<!DOCTYPE html>
+<html class="dark" lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>자산 현황</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            min-height: max(884px, 100dvh);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col antialiased">
+    <div
+        class="mx-auto w-full max-w-md bg-background-light dark:bg-background-dark min-h-screen flex flex-col relative overflow-hidden shadow-2xl">
+        <header
+            class="pt-12 pb-4 px-6 flex items-center justify-between sticky top-0 z-20 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md">
+            <div class="flex items-center gap-3">
+                <div class="relative group cursor-pointer">
+                    <div
+                        class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 bg-center bg-cover border-2 border-primary flex items-center justify-center">
+                        <span class="material-symbols-outlined text-slate-500 delay-100">person</span>
+                    </div>
+                    <div
+                        class="absolute bottom-0 right-0 h-3 w-3 bg-primary rounded-full border-2 border-background-light dark:border-background-dark">
+                    </div>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">우리들의 가계부</span>
+                    <h1 class="text-lg font-bold leading-tight">소수커플</h1>
+                </div>
+            </div>
+            <button id="api-btn"
+                class="relative p-2 rounded-full bg-white dark:bg-[#1c2e22] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#253b2d] transition-colors">
+                <span class="material-symbols-outlined text-[24px]">key</span>
+                <span id="api-indicator"
+                    class="hidden absolute top-2 right-2.5 h-2 w-2 bg-red-500 rounded-full border border-white dark:border-[#1c2e22]"></span>
+            </button>
+        </header>
+        <main class="flex-1 overflow-y-auto no-scrollbar pb-24 px-6 space-y-6">
+
+            <!-- API Key Input Block (Hidden by default) -->
+            <div id="api-block" class="hidden bg-[#1c2e22] rounded-2xl p-4 border border-[#2a4232]">
+                <div class="text-xs text-slate-400 mb-2 font-bold">Gemini API Key 설정</div>
+                <div class="flex gap-2">
+                    <input id="apiKeyInput" type="password"
+                        class="flex-1 rounded-xl bg-[#15231a] border-[#2a4232] text-white px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
+                        placeholder="AI Key..." />
+                    <button id="saveKeyBtn" class="px-3 rounded-xl bg-primary text-black font-bold text-sm">저장</button>
+                </div>
+            </div>
+
+            <section class="relative overflow-hidden rounded-2xl bg-[#1c2e22] border border-[#2a4232] shadow-lg">
+                <div
+                    class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl pointer-events-none">
+                </div>
+                <div class="p-5 relative z-10">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <p class="text-sm font-medium text-slate-400 mb-1">우리 이번 달 총 지출</p>
+                            <h2 id="totalExp" class="text-3xl font-extrabold tracking-tight text-white">0원</h2>
+                        </div>
+                        <div class="bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
+                            <span id="sharedPercentage" class="text-xs font-bold text-red-500">공동 0%</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-300">공동 예산 <span id="budgetAlert"
+                                    class="hidden text-red-400 font-bold">(초과 경고!)</span></span>
+                            <span class="text-white"><span id="totalExpSmall">0</span> / 1,500,000원</span>
+                        </div>
+                        <div class="h-3 w-full bg-slate-800 rounded-full overflow-hidden">
+                            <div id="budgetBar"
+                                class="h-full bg-gradient-to-r from-primary to-[#0fb845] rounded-full w-[0%] shadow-[0_0_10px_rgba(19,236,91,0.4)] transition-all">
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 text-right pt-1">예산 잔액: <span id="budgetLeft"
+                                class="text-primary font-bold">1,500,000원</span></p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-[#15231a] p-3 rounded-xl border border-[#2a4232]">
+                            <div class="flex items-center gap-2 mb-1">
+                                <div
+                                    class="w-6 h-6 rounded-full bg-slate-600/20 flex items-center justify-center text-slate-400">
+                                    <span class="material-symbols-outlined text-[14px]">person</span>
+                                </div>
+                                <span class="text-xs text-slate-400">내 결제</span>
+                            </div>
+                            <p id="meExp" class="text-lg font-bold text-white pl-1">0원</p>
+                        </div>
+                        <div class="bg-[#15231a] p-3 rounded-xl border border-[#2a4232]">
+                            <div class="flex items-center gap-2 mb-1">
+                                <div
+                                    class="w-6 h-6 rounded-full bg-slate-600/20 flex items-center justify-center text-slate-400">
+                                    <span class="material-symbols-outlined text-[14px]">person_check</span>
+                                </div>
+                                <span class="text-xs text-slate-400">상대방 결제</span>
+                            </div>
+                            <p id="youExp" class="text-lg font-bold text-white pl-1">0원</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section>
+                <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+                    <button onclick="window.location.href='/add'"
+                        class="flex flex-col items-center gap-2 min-w-[72px] group">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-background-dark font-bold text-3xl">add</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300">내역 추가</span>
+                    </button>
+
+                    <label for="camera" class="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
+                        <input id="camera" type="file" accept="image/*" capture="environment" class="hidden">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c2e22] border border-slate-100 dark:border-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-primary text-2xl">photo_camera</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300">영수증 촬영</span>
+                    </label>
+
+                    <label for="fileUpload" class="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
+                        <input id="fileUpload" type="file" accept="image/*" class="hidden">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c2e22] border border-slate-100 dark:border-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-primary text-2xl">upload_file</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300">사진 업로드</span>
+                    </label>
+
+                    <button class="flex flex-col items-center gap-2 min-w-[72px] group opacity-50 cursor-not-allowed">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-white dark:bg-[#1c2e22] border border-slate-100 dark:border-[#2a4232] flex items-center justify-center group-active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-primary text-2xl">link</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300">계좌연동</span>
+                    </button>
+                </div>
+                <div id="scanStatus" class="text-xs text-primary font-bold mt-2 text-center h-4"></div>
+            </section>
+
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">최근 내역</h3>
+                    <a class="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                        href="/calendar">전체 보기</a>
+                </div>
+                <div id="recentList" class="flex flex-col gap-3">
+                    <!-- Transactions appended via JS -->
+                </div>
+            </section>
+            <div class="h-6"></div>
+        </main>
+        <nav
+            class="sticky bottom-0 z-30 w-full border-t border-slate-200 dark:border-[#2a4232] bg-background-light dark:bg-[#15231a] px-2 pb-5 pt-3 backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95">
+            <div class="flex justify-around items-center">
+                <a class="flex flex-col items-center gap-1 group w-16" href="/">
+                    <div
+                        class="relative flex items-center justify-center p-1 rounded-full transition-colors bg-primary/10">
+                        <span class="material-symbols-outlined text-primary text-[28px] fill-current">home</span>
+                    </div>
+                    <span class="text-[10px] font-medium text-primary">홈</span>
+                </a>
+                <a class="flex flex-col items-center gap-1 group w-16" href="/stats">
+                    <div
+                        class="relative flex items-center justify-center p-1 rounded-full transition-colors group-hover:bg-slate-200 dark:group-hover:bg-slate-800">
+                        <span
+                            class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">donut_small</span>
+                    </div>
+                    <span
+                        class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">통계</span>
+                </a>
+                <a class="flex flex-col items-center gap-1 group w-16" href="/calendar">
+                    <div
+                        class="relative flex items-center justify-center p-1 rounded-full transition-colors group-hover:bg-slate-200 dark:group-hover:bg-slate-800">
+                        <span
+                            class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">calendar_month</span>
+                    </div>
+                    <span
+                        class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">달력</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script type="module">
+        import { getKey, setKey, getTx, setTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getPayerLabel } from './app.js';
+
+        const BUDGET = 1500000;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // API Key UI
+            const apiBtn = document.getElementById('api-btn');
+            const apiBlock = document.getElementById('api-block');
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const saveKeyBtn = document.getElementById('saveKeyBtn');
+            const apiIndicator = document.getElementById('api-indicator');
+
+            const currentKey = getKey();
+            if (!currentKey) apiIndicator.classList.remove('hidden');
+            apiKeyInput.value = currentKey;
+
+            apiBtn.onclick = () => apiBlock.classList.toggle('hidden');
+            saveKeyBtn.onclick = () => {
+                setKey(apiKeyInput.value.trim());
+                location.reload();
+            };
+
+            // Data Load
+            const m = ym();
+            const allTx = getTx();
+            const currTx = allTx.filter(t => t.tx_date?.startsWith(m));
+
+            let total = 0, me = 0, you = 0, together = 0;
+            currTx.forEach(t => {
+                const a = Number(t.amount || 0);
+                total += a;
+                if (t.payer === 'me') me += a;
+                else if (t.payer === 'you') you += a;
+                else if (t.payer === 'together') together += a;
+                else me += a; // fallback
+            });
+
+            // Overview numbers
+            document.getElementById('totalExp').textContent = won(total);
+            document.getElementById('totalExpSmall').textContent = won(total).replace('원', '');
+            document.getElementById('meExp').textContent = won(me);
+            document.getElementById('youExp').textContent = won(you);
+
+            const sharedRatio = total > 0 ? Math.round((together / total) * 100) : 0;
+            document.getElementById('sharedPercentage').textContent = `공동 ${sharedRatio}%`;
+
+            // Budget Bar
+            const budgetPerc = Math.min(100, Math.round((total / BUDGET) * 100));
+            const budgetBar = document.getElementById('budgetBar');
+            budgetBar.style.width = `${budgetPerc}%`;
+            const left = BUDGET - total;
+            if (left < 0) {
+                document.getElementById('budgetLeft').textContent = `-${won(Math.abs(left))}`;
+                document.getElementById('budgetLeft').classList.replace('text-primary', 'text-red-500');
+                budgetBar.classList.replace('from-primary', 'from-red-500');
+                budgetBar.classList.replace('to-[#0fb845]', 'to-red-600');
+                document.getElementById('budgetAlert').classList.remove('hidden');
+            } else {
+                document.getElementById('budgetLeft').textContent = won(left);
+            }
+
+            // Recent List
+            const recentList = document.getElementById('recentList');
+            const recentTx = currTx.slice().reverse().slice(0, 5);
+            if (recentTx.length === 0) {
+                recentList.innerHTML = '<div class="text-slate-400 text-center text-sm py-4">이번 달 내역이 아직 없어요.</div>';
+            } else {
+                recentList.innerHTML = recentTx.map(t => {
+                    const catInfo = getCatIconInfo(t.category);
+
+                    // Payer badge style
+                    let payerBadge = '';
+                    if (t.payer === 'me') {
+                        payerBadge = `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">나</span>`;
+                    } else if (t.payer === 'you') {
+                        payerBadge = `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">상대방</span>`;
+                    } else if (t.payer === 'together') {
+                        payerBadge = `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5 border border-primary/30">공동</span>`;
+                    }
+
+                    return `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-[#1c2e22] border border-transparent dark:border-[#2a4232] hover:border-primary/30 transition-all cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl ${catInfo.bgColor} flex items-center justify-center ${catInfo.textColor}">
+                        <span class="material-symbols-outlined">${catInfo.icon}</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="flex items-center">
+                            <span class="font-bold text-slate-900 dark:text-white truncate max-w-[120px]">${t.merchant || '미분류'}</span>
+                            ${payerBadge}
+                        </div>
+                        <span class="text-xs text-slate-500 dark:text-slate-400">${t.category || '기타'} • ${t.tx_date.slice(5)}</span>
+                    </div>
+                </div>
+                <span class="font-bold text-slate-900 dark:text-white">-₩${Number(t.amount || 0).toLocaleString()}</span>
+            </div>`;
+                }).join('');
+            }
+
+            // Camera / Upload
+            const scanStatus = document.getElementById('scanStatus');
+            const handleScan = async (e) => {
+                const f = e.target.files[0];
+                if (!f) return;
+                if (!getKey()) {
+                    scanStatus.textContent = '* 우측 상단 열쇠 버튼을 눌러 API 키를 저장하세요.';
+                    scanStatus.classList.replace('text-primary', 'text-red-500');
+                    return;
+                }
+                scanStatus.classList.replace('text-red-500', 'text-primary');
+                scanStatus.textContent = '영수증 인식 중입니다...';
+                try {
+                    const r = await parseReceiptWithGemini(f, getKey());
+                    const updatedTx = getTx();
+                    updatedTx.push({ ...r, amount: Number(r.amount || 0), created_at: new Date().toISOString() });
+                    setTx(updatedTx);
+                    scanStatus.textContent = '저장 성공! 새로고침합니다.';
+                    setTimeout(() => location.reload(), 1000);
+                } catch (err) {
+                    scanStatus.classList.replace('text-primary', 'text-red-500');
+                    scanStatus.textContent = '실패: ' + err.message;
+                }
+            };
+
+            document.getElementById('camera').onchange = handleScan;
+            document.getElementById('fileUpload').onchange = handleScan;
+        });
+    </script>
+</body>
+
+</html>
