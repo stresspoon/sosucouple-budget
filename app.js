@@ -36,7 +36,7 @@ if (supabase) {
         await supabase.from('transactions').insert(inserts);
       }
       localStorage.removeItem(TX);
-    } catch (e) { console.error("Migration error", e); localStorage.removeItem(TX); }
+    } catch (e) { console.error("Migration error", e); }
   }
 }
 
@@ -57,15 +57,16 @@ export async function getTx() {
   const { data, error } = await supabase.from('transactions')
     .select('*')
     .order('tx_date', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(10000);
   if (error) { console.error(error); return []; }
   return data || [];
 }
 
 export async function addTx(t) {
-  if (!supabase) return;
+  if (!supabase) throw new Error('데이터베이스에 연결할 수 없습니다.');
   const { error } = await supabase.from('transactions').insert([t]);
-  if (error) console.error(error);
+  if (error) throw new Error(error.message || '저장에 실패했습니다.');
 }
 
 export async function clearTx() {
@@ -88,23 +89,8 @@ export function getPayerLabel(payer) {
   return getMeAlias();
 }
 
-export async function loadDummyData() {
-  const d = await getTx();
-  if (d.length > 0) return;
-  const m = ym();
-  const dummy = [
-    { tx_date: `${m}-01`, merchant: "스타벅스", amount: 15300, category: "카페", payer: "me", memo: "", items: [] },
-    { tx_date: `${m}-05`, merchant: "이마트", amount: 125000, category: "식비", payer: "together", memo: "", items: [] },
-    { tx_date: `${m}-12`, merchant: "CGV", amount: 30000, category: "문화생활", payer: "you", memo: "", items: [] },
-    { tx_date: `${m}-18`, merchant: "무신사", amount: 89000, category: "쇼핑", payer: "me", memo: "", items: [] },
-    { tx_date: `${m}-20`, merchant: "올리브영", amount: 45000, category: "쇼핑", payer: "you", memo: "", items: [] },
-    { tx_date: `${m}-25`, merchant: "돼지게티", amount: 24000, category: "식비", payer: "me", memo: "", items: [] },
-    { tx_date: `${m}-28`, merchant: "택시비", amount: 11000, category: "교통", payer: "you", memo: "", items: [] },
-  ];
-  if (supabase) {
-    await supabase.from('transactions').insert(dummy);
-    location.reload();
-  }
+export function escapeHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 export const catIconRecord = {

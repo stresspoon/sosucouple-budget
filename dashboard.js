@@ -1,4 +1,4 @@
-import { getKey, getTx, addTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, loadDummyData, getMeAlias, getYouAlias } from './app.js';
+import { getKey, getTx, addTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
 
 const BUDGET = getBudget();
 
@@ -6,12 +6,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Data Load
     const m = ym();
     const allTx = await getTx();
-
-    // load dummy data for insight testing if DB empty
-    if (allTx.length === 0) {
-        await loadDummyData();
-        return;
-    }
 
     const currTx = allTx.filter(t => t.tx_date?.startsWith(m));
 
@@ -27,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Overview numbers
     document.getElementById('totalExp').textContent = won(total);
-    document.getElementById('totalExpSmall').textContent = won(total).replace('원', '');
+    document.getElementById('totalExpSmall').textContent = won(total);
     document.getElementById('meExp').textContent = won(me);
     document.getElementById('youExp').textContent = won(you);
 
@@ -60,12 +54,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Payer badge style
             let payerBadge = '';
+            const payerLabel = getPayerLabel(t.payer);
             if (t.payer === 'me') {
-                payerBadge = `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">나</span>`;
+                payerBadge = `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">${escapeHtml(payerLabel)}</span>`;
             } else if (t.payer === 'you') {
-                payerBadge = `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">상대방</span>`;
+                payerBadge = `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">${escapeHtml(payerLabel)}</span>`;
             } else if (t.payer === 'together') {
-                payerBadge = `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5 border border-primary/30">공동</span>`;
+                payerBadge = `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5 border border-primary/30">${escapeHtml(payerLabel)}</span>`;
             }
 
             return `
@@ -76,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div class="flex flex-col">
                 <div class="flex items-center">
-                    <span class="font-bold text-slate-900 dark:text-white truncate max-w-[120px]">${t.merchant || '미분류'}</span>
+                    <span class="font-bold text-slate-900 dark:text-white truncate max-w-[120px]">${escapeHtml(t.merchant || '미분류')}</span>
                     ${payerBadge}
                 </div>
                 <span class="text-xs text-slate-500 dark:text-slate-400">${t.category || '기타'} • ${t.tx_date.slice(5)}</span>

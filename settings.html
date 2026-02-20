@@ -148,52 +148,42 @@
 
             <!-- DB Placeholder for Next Milestone -->
             <section
-                class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5 opacity-50 space-y-4">
+                class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5 space-y-4">
                 <div class="flex items-center gap-3 border-b border-slate-100 dark:border-white/5 pb-3">
-                    <span class="material-symbols-outlined text-slate-400">cloud_sync</span>
-                    <h2 class="text-lg font-bold text-slate-400">클라우드 연동 (Supabase)</h2>
+                    <span class="material-symbols-outlined text-primary">cloud_done</span>
+                    <h2 class="text-lg font-bold">클라우드 연동 (Supabase)</h2>
                 </div>
-                <p class="text-sm text-slate-400">준비 중입니다. 다음 업데이트에 자동으로 동기화 기능이 활성화됩니다.</p>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                    <p class="text-sm text-slate-300">Supabase 클라우드에 자동 동기화 중입니다.</p>
+                </div>
             </section>
 
         </main>
         <nav
-            class="fixed bottom-0 z-40 w-full border-t border-slate-200 dark:border-[#2a4232] bg-background-light dark:bg-[#15231a] px-2 pt-3 backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95 text-slate-900 dark:text-slate-100" style="padding-bottom: max(env(safe-area-inset-bottom, 20px), 20px);">
-            <div class="flex justify-between items-center px-4">
+            class="sticky bottom-0 z-30 w-full border-t border-slate-200 dark:border-[#2a4232] bg-background-light dark:bg-[#15231a] px-2 pt-3 backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95 shrink-0" style="padding-bottom: max(env(safe-area-inset-bottom, 20px), 20px);">
+            <div class="flex justify-around items-center">
                 <a class="flex flex-col items-center gap-1 group w-16" href="/">
-                    <span
-                        class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">home</span>
-                    <span
-                        class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">홈</span>
+                    <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">home</span>
+                    <span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">홈</span>
                 </a>
                 <a class="flex flex-col items-center gap-1 group w-16" href="/stats">
-                    <span
-                        class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">donut_small</span>
-                    <span
-                        class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">통계</span>
+                    <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">donut_small</span>
+                    <span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">통계</span>
                 </a>
-                <div class="relative -top-8 flex w-16 justify-center">
-                    <button
-                        onclick="document.getElementById('payerModal').classList.remove('hidden'); setTimeout(() => { document.getElementById('payerModal').classList.remove('opacity-0'); document.getElementById('payerModalContent').classList.remove('translate-y-full'); }, 10); window.currentUploadAction = 'camera';"
-                        class="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-black shadow-lg shadow-primary/40 transition-transform hover:scale-105 active:scale-95 border-4 border-background-light dark:border-background-dark">
-                        <span class="material-symbols-outlined text-3xl">photo_camera</span>
-                    </button>
-                </div>
                 <a class="flex flex-col items-center gap-1 group w-16" href="/calendar">
-                    <span
-                        class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">calendar_month</span>
-                    <span
-                        class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">달력</span>
+                    <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">calendar_month</span>
+                    <span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">달력</span>
                 </a>
                 <a class="flex flex-col items-center gap-1 group w-16" href="/settings">
-                    <div
-                        class="relative flex items-center justify-center p-1 rounded-full transition-colors bg-primary/10">
+                    <div class="relative flex items-center justify-center p-1 rounded-full transition-colors bg-primary/10">
                         <span class="material-symbols-outlined text-primary text-[28px] fill-current">person</span>
                     </div>
                     <span class="text-[10px] font-medium text-primary">설정</span>
                 </a>
             </div>
         </nav>
+    </div>
 
         <!-- Payer Selection Modal -->
         <div id="payerModal"
@@ -251,7 +241,7 @@
         </div>
 
         <script type="module">
-            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias } from './app.js';
+            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, parseReceiptWithGemini, addTx } from './app.js';
 
             const meInp = document.getElementById('meAliasInput');
             const youInp = document.getElementById('youAliasInput');
@@ -292,19 +282,34 @@
                 document.getElementById('resetDataContainer').classList.add('hidden');
             };
 
+            // Set modal aliases
+            const modalMeEl = document.getElementById('modalMeAlias');
+            const modalYouEl = document.getElementById('modalYouAlias');
+            if (modalMeEl) modalMeEl.textContent = getMeAlias();
+            if (modalYouEl) modalYouEl.textContent = getYouAlias();
+
             // Payer Modal Logic inside settings
+            let selectedSettingsPayer = 'me';
             window.handleModalPayerSelect = function (payerStr) {
+                selectedSettingsPayer = payerStr;
                 document.getElementById('payerModal').classList.add('opacity-0');
                 document.getElementById('payerModalContent').classList.add('translate-y-full');
                 setTimeout(() => document.getElementById('payerModal').classList.add('hidden'), 300);
+                document.getElementById('modalCameraInput').click();
+            };
 
-                const inp = document.getElementById('modalCameraInput');
-                inp.onchange = (e) => {
-                    if (e.target.files && e.target.files[0]) {
-                        alert(`${payerStr} 결제 영수증 분석을 시작합니다. (더미 처리)`);
-                    }
-                };
-                inp.click();
+            document.getElementById('modalCameraInput').onchange = async (e) => {
+                const f = e.target.files[0];
+                if (!f) return;
+                if (!getKey()) { alert('설정에서 Gemini API 키를 먼저 등록해주세요.'); return; }
+                try {
+                    const r = await parseReceiptWithGemini(f, getKey());
+                    await addTx({ ...r, payer: selectedSettingsPayer, amount: Number(r.amount || 0) });
+                    alert('영수증이 등록되었습니다!');
+                    location.reload();
+                } catch (err) {
+                    alert('영수증 인식 실패: ' + err.message);
+                }
             };
         </script>
 </body>

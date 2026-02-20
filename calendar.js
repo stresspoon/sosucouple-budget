@@ -1,4 +1,4 @@
-import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey } from './app.js';
+import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
 
 let cur = new Date();
 const drawer = document.getElementById('dayDrawer');
@@ -100,12 +100,13 @@ function showDay(dateStr, txList, totalDayAmt) {
         const c = getCatIconInfo(t.category);
 
         let payerBadge = '';
+        const payerLabel = getPayerLabel(t.payer);
         if (t.payer === 'me') {
-            payerBadge = `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2">나</span>`;
+            payerBadge = `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2">${escapeHtml(payerLabel)}</span>`;
         } else if (t.payer === 'you') {
-            payerBadge = `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2">상대방</span>`;
+            payerBadge = `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2">${escapeHtml(payerLabel)}</span>`;
         } else if (t.payer === 'together') {
-            payerBadge = `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 border border-primary/30">공동</span>`;
+            payerBadge = `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 border border-primary/30">${escapeHtml(payerLabel)}</span>`;
         }
 
         // Generate inner items (세부 내역) if any
@@ -114,7 +115,7 @@ function showDay(dateStr, txList, totalDayAmt) {
             itemsHtml = `<div class="w-full mt-2 pl-2 border-l border-white/10 space-y-1 hidden group-hover/item:block">` +
                 t.items.map(item => `
             <div class="flex justify-between text-[11px] text-text-muted">
-                <span>- ${item.name}</span>
+                <span>- ${escapeHtml(item.name)}</span>
                 <span>₩${Number(item.price || 0).toLocaleString()}</span>
             </div>
         `).join('') + `</div>`;
@@ -129,7 +130,7 @@ function showDay(dateStr, txList, totalDayAmt) {
             </div>
             <div class="flex flex-col">
                 <div class="flex items-center">
-                    <span class="text-white font-bold text-sm">${t.merchant}</span>
+                    <span class="text-white font-bold text-sm">${escapeHtml(t.merchant)}</span>
                     ${payerBadge}
                 </div>
                 <span class="text-text-muted text-[11px]">${t.category}</span>
@@ -149,6 +150,12 @@ function showDay(dateStr, txList, totalDayAmt) {
 
 document.getElementById('prevBtn').onclick = () => { cur.setMonth(cur.getMonth() - 1); render(); };
 document.getElementById('nextBtn').onclick = () => { cur.setMonth(cur.getMonth() + 1); render(); };
+
+// Set modal aliases
+const modalMe = document.getElementById('modalMeAlias');
+const modalYou = document.getElementById('modalYouAlias');
+if (modalMe) modalMe.textContent = getMeAlias();
+if (modalYou) modalYou.textContent = getYouAlias();
 
 // Payer modal handler for camera FAB
 let selectedPayer = 'me';

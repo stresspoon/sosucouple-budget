@@ -1,4 +1,4 @@
-import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, parseReceiptWithGemini, addTx, getKey } from './app.js';
+import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, parseReceiptWithGemini, addTx, getKey, getPayerLabel, escapeHtml } from './app.js';
 
 const colors = [
     { name: 'green', code: '#13ec5b', fill: 'bg-[#13ec5b]/20 text-[#13ec5b]' },
@@ -70,7 +70,7 @@ async function render() {
         const cached = localStorage.getItem(cacheKey);
         const isDownloaded = localStorage.getItem(downloadKey) === 'true';
 
-        const isTestMode = true; // 임시: 지금 테스트를 위해 항시 열림 상태 유지
+        const isTestMode = false;
         const realCurrentMonth = ym(new Date());
         let canGenerate = true;
         let lockMsg = "";
@@ -200,10 +200,10 @@ async function render() {
             </div>
             <div class="flex flex-col">
                 <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-900 dark:text-white">${catTitle}</span>
+                    <span class="font-bold text-slate-900 dark:text-white">${escapeHtml(catTitle)}</span>
                     <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-white/10 dark:text-slate-400">${percString}</span>
                 </div>
-                <span class="text-xs text-slate-500 dark:text-slate-400">총 ${tx.filter(t => t.category === catTitle).length}건</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">총 ${currentMode === 'cat' ? tx.filter(t => (t.category || '기타') === catTitle).length : tx.filter(t => getPayerLabel(t.payer) === catTitle).length}건</span>
             </div>
         </div>
         <div class="flex flex-col items-end">
@@ -244,6 +244,12 @@ if (modeCat && modePayer && modeBg) {
         render();
     };
 }
+
+// Set modal aliases
+const modalMe = document.getElementById('modalMeAlias');
+const modalYou = document.getElementById('modalYouAlias');
+if (modalMe) modalMe.textContent = getMeAlias();
+if (modalYou) modalYou.textContent = getYouAlias();
 
 // Payer modal handler for camera FAB
 let selectedPayer = 'me';

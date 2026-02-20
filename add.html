@@ -42,7 +42,7 @@
         }
 
         .pb-safe-bottom {
-            padding-bottom: env(safe-area-inset-bottom, 32px);
+            padding-bottom: max(env(safe-area-inset-bottom, 20px), 20px);
         }
     </style>
 
@@ -84,7 +84,7 @@
                     <div
                         class="flex flex-col items-center justify-center py-2 rounded-lg text-sm font-semibold text-slate-400 transition-all duration-200 peer-checked:bg-slate-700 peer-checked:text-white peer-checked:shadow-sm">
                         <span class="material-symbols-outlined text-[18px] mb-1">person</span>
-                        나
+                        <span id="payerMeLabel">나</span>
                     </div>
                 </label>
                 <label class="flex-1 cursor-pointer">
@@ -100,7 +100,7 @@
                     <div
                         class="flex flex-col items-center justify-center py-2 rounded-lg text-sm font-semibold text-slate-400 transition-all duration-200 peer-checked:bg-indigo-900/50 peer-checked:text-indigo-300 peer-checked:shadow-sm">
                         <span class="material-symbols-outlined text-[18px] mb-1">person_check</span>
-                        너
+                        <span id="payerYouLabel">상대방</span>
                     </div>
                 </label>
             </div>
@@ -172,7 +172,7 @@
     </div>
 
     <script type="module">
-        import { addTx, ymd, won } from './app.js';
+        import { addTx, ymd, getMeAlias, getYouAlias } from './app.js';
 
         const amountInput = document.getElementById('amountInput');
         const dateInput = document.getElementById('dateInput');
@@ -182,6 +182,12 @@
         const saveBtn = document.getElementById('saveBtn');
 
         dateInput.value = ymd();
+
+        // Set dynamic payer labels
+        const payerMeLabel = document.getElementById('payerMeLabel');
+        const payerYouLabel = document.getElementById('payerYouLabel');
+        if (payerMeLabel) payerMeLabel.textContent = getMeAlias();
+        if (payerYouLabel) payerYouLabel.textContent = getYouAlias();
 
         catSelect.addEventListener('change', (e) => {
             selCat.textContent = e.target.value;
@@ -221,8 +227,14 @@
                 items: []
             };
 
-            await addTx(obj);
-            window.location.href = '/';
+            try {
+                await addTx(obj);
+                window.location.href = '/';
+            } catch (err) {
+                alert('저장 실패: ' + err.message);
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<span>저장하기</span><span class="material-symbols-outlined text-[20px] font-bold">check</span>';
+            }
         };
         updateBtn();
     </script>
