@@ -103,3 +103,38 @@ function fileToBase64(file) {
     fr.readAsDataURL(file);
   });
 }
+
+export async function generateMonthlyInsight(monthStr, txList) {
+  const key = getKey();
+  if (!key) throw new Error('API 키가 셋팅되지 않았습니다. 설정 탭에서 저장해주세요.');
+  if (!txList || txList.length === 0) throw new Error('분석할 지출 데이터가 없습니다.');
+
+  const txCtx = txList.map(t => `${t.tx_date}|${t.category}|${t.amount}원|${t.merchant}|결제:${t.payer}`).join('\\n');
+  const prompt = `너는 냉철하고 위트있는 커플 가계부 분석 AI야. 
+다음은 ${monthStr} 한 달간 발생한 결제 내역들이야. 
+절대 이모티콘을 사용하지 말고, 다음 4가지 항목을 각각 HTML <div class="mb-4"> 태그로 감싸서 응답해줘. 
+각 항목의 제목은 <strong class="text-primary block mb-1 font-bold"> 태그로 감싸고 내용은 그 뒤에 한 줄로 간결하게 팩트폭행을 담아 작성할 것. 전체를 <div class="text-sm space-y-2"> 로 감쌀 것.
+
+1. 이번 달 데이트 테마 명명 (예: 카페 투어가 잦았던 휴식의 달)
+2. 결제 요정 타이틀 부여 (예: 상대방은 디저트 탐험가, 나는 든든한 밥스폰서)
+3. 예산 대비 방심했던 지출 팩트폭행 조언 (예: 잦은 편의점 방문으로 누수 발생. 야식을 줄이세요.)
+4. 돈을 가장 알차게 쓴 날(Top 1) 동선 회고 (예: 15일 식당-카페 동선은 완벽했습니다.)
+
+결제 내역:
+${txCtx}`;
+
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.7 }
+  };
+
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j?.error?.message || 'Gemini 분석 실패');
+
+  let text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('\\n').trim();
+  return text.replace(/```html/g, '').replace(/```/g, '').trim();
+}
+

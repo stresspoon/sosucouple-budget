@@ -1,4 +1,4 @@
-import { getTx, ym, won, getCatIconInfo } from './app.js';
+import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight } from './app.js';
 
 const colors = [
     { name: 'green', code: '#13ec5b', fill: 'bg-[#13ec5b]/20 text-[#13ec5b]' },
@@ -43,19 +43,43 @@ function render() {
 
     const rows = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
 
-    // Insights
-    let insightStr = "이번 달은 지출이 없습니다.";
-    if (total > 0) {
-        let maxSub = "알 수 없음";
-        let maxVal = 0;
-        if (meAmt > maxVal) { maxVal = meAmt; maxSub = "본인"; }
-        if (youAmt > maxVal) { maxVal = youAmt; maxSub = "상대방"; }
-        if (togetherAmt > maxVal) { maxVal = togetherAmt; maxSub = "공동(함께)"; }
+    // Build AI Insight UI
+    const aiInsightBox = document.getElementById('aiInsightBox');
+    const btnAiInsight = document.getElementById('btnAiInsight');
+    const aiInsightResult = document.getElementById('aiInsightResult');
 
-        const mostCat = rows[0][0];
-        insightStr = `이번 달은 ${mostCat} 항목의 지출이 가장 컸습니다. 전체 결제 중 <span class="text-primary font-bold">${maxSub}</span> 결제 비중이 제일 높네요!`;
+    if (tx.length === 0) {
+        aiInsightBox.classList.add('hidden');
+    } else {
+        aiInsightBox.classList.remove('hidden');
+        const cacheKey = 'gemini_insight_' + month;
+        const cached = localStorage.getItem(cacheKey);
+
+        if (cached) {
+            aiInsightResult.innerHTML = cached;
+            btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">refresh</span> <span>다시 분석하기</span>';
+            btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/50 hover:bg-slate-800/70 text-slate-400 transition-colors text-xs font-bold py-3 rounded-xl border border-white/10 flex items-center justify-center gap-2 shadow-sm";
+        } else {
+            aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 지출 데이터가 모두 모였습니다. 객관적이고 예리한 AI의 소비 패턴 분석을 시작해보세요!</p>';
+            btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">magic_button</span> <span>이번 달 리포트 생성하기 (월 1회 권장)</span>';
+            btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
+        }
+
+        btnAiInsight.onclick = async () => {
+            btnAiInsight.disabled = true;
+            btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> <span>분석 중... (약 5-10초 소요)</span>';
+            try {
+                const resHtml = await generateMonthlyInsight(month, tx);
+                localStorage.setItem(cacheKey, resHtml);
+                render();
+            } catch (err) {
+                alert(err.message);
+                render();
+            } finally {
+                btnAiInsight.disabled = false;
+            }
+        };
     }
-    document.getElementById('insightText').innerHTML = insightStr;
 
     // Build SVG Doughnut + Category list DOM
     const donutSvg = document.getElementById('donut');

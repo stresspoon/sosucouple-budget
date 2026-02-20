@@ -110,20 +110,21 @@
                 </label>
 
                 <div id="categoryBtn"
-                    class="bg-surface-dark rounded-xl p-3 flex flex-col justify-between h-20 border border-transparent hover:border-primary/30 transition-colors cursor-pointer group relative overflow-hidden">
-                    <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 z-10">
+                    class="bg-surface-dark rounded-xl p-3 flex flex-col justify-between h-20 border border-transparent hover:border-primary/30 transition-colors cursor-pointer group relative overflow-hidden select-none">
+                    <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 z-10 pointer-events-none">
                         <span class="material-symbols-outlined text-[18px]">category</span>
                         <span class="text-xs font-semibold uppercase tracking-wider">카테고리</span>
                     </div>
-                    <div class="flex items-center justify-between pl-0.5 z-10">
+                    <div class="flex items-center justify-between pl-0.5 z-10 pointer-events-none">
                         <span id="selectedCat"
-                            class="font-bold text-base group-hover:text-primary transition-colors">식비</span>
+                            class="font-bold text-base group-hover:text-primary transition-colors pointer-events-none">식비</span>
                         <div class="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary">
                             <span class="material-symbols-outlined text-[16px]">expand_more</span>
                         </div>
                     </div>
                     <!-- Category Dropdown hidden -->
-                    <select id="catSelect" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                    <select id="catSelect"
+                        class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20 appearance-none">
                         <option value="식비">식비</option>
                         <option value="카페">카페</option>
                         <option value="교통">교통</option>

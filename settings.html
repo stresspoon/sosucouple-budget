@@ -29,10 +29,6 @@
         }
     </script>
     <style>
-        body {
-            min-height: max(884px, 100dvh);
-        }
-
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -45,9 +41,9 @@
 </head>
 
 <body
-    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased selection:bg-primary selection:text-black">
+    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 h-[100dvh] overflow-hidden flex flex-col antialiased selection:bg-primary selection:text-black">
     <div
-        class="relative flex h-full min-h-screen w-full max-w-md mx-auto flex-col overflow-hidden bg-background-light dark:bg-background-dark shadow-2xl">
+        class="relative flex h-full w-full max-w-md mx-auto flex-col overflow-hidden bg-background-light dark:bg-background-dark shadow-2xl">
         <header class="flex items-center justify-between px-4 pt-6 pb-2 shrink-0">
             <button onclick="window.history.back()"
                 class="flex h-10 w-10 items-center justify-center rounded-full text-slate-900 hover:bg-slate-200 dark:text-white dark:hover:bg-white/10 transition-colors">
