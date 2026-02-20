@@ -1,4 +1,4 @@
-import { getKey, getTx, setTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget } from './app.js';
+import { getKey, getTx, setTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, loadDummyData, getMeAlias, getYouAlias } from './app.js';
 
 const BUDGET = getBudget();
 
@@ -6,6 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data Load
     const m = ym();
     const allTx = getTx();
+
+    // load dummy data for insight testing if DB empty
+    if (allTx.length === 0) {
+        loadDummyData();
+        return;
+    }
+
     const currTx = allTx.filter(t => t.tx_date?.startsWith(m));
 
     let total = 0, me = 0, you = 0, together = 0;
@@ -80,6 +87,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
+    // Modal elements
+    const payerModal = document.getElementById('payerModal');
+    const payerModalContent = document.getElementById('payerModalContent');
+    const modalMeAlias = document.getElementById('modalMeAlias');
+    const modalYouAlias = document.getElementById('modalYouAlias');
+
+    if (modalMeAlias) modalMeAlias.textContent = getMeAlias();
+    if (modalYouAlias) modalYouAlias.textContent = getYouAlias();
+
+    let currentUploadAction = null;
+
+    const openModal = (action) => {
+        currentUploadAction = action;
+        payerModal.classList.remove('hidden');
+        setTimeout(() => {
+            payerModal.classList.remove('opacity-0');
+            payerModalContent.classList.remove('translate-y-full');
+        }, 10);
+    };
+
+    const closeModal = () => {
+        payerModal.classList.add('opacity-0');
+        payerModalContent.classList.add('translate-y-full');
+        setTimeout(() => payerModal.classList.add('hidden'), 300);
+    };
+
+    const closeBtn = document.getElementById('closePayerModal');
+    if (closeBtn) closeBtn.onclick = closeModal;
+
+    // Trigger modal instead of input popup directly
+    const cameraBtn = document.getElementById('cameraBtn');
+    if (cameraBtn) cameraBtn.onclick = () => openModal('camera');
+
+    const uploadBtn = document.getElementById('uploadBtn');
+    if (uploadBtn) uploadBtn.onclick = () => openModal('file');
+
+    let selectedTempPayer = 'me';
+
+    document.querySelectorAll('.payer-btn').forEach(btn => {
+        btn.onclick = () => {
+            selectedTempPayer = btn.getAttribute('data-payer');
+            closeModal();
+            if (currentUploadAction === 'camera') document.getElementById('cameraInput').click();
+            else document.getElementById('uploadInput').click();
+        };
+    });
+
     // Camera / Upload
     const scanStatus = document.getElementById('scanStatus');
     const handleScan = async (e) => {
@@ -95,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const r = await parseReceiptWithGemini(f, getKey());
             const updatedTx = getTx();
-            updatedTx.push({ ...r, amount: Number(r.amount || 0), created_at: new Date().toISOString() });
+            updatedTx.push({ ...r, payer: selectedTempPayer, amount: Number(r.amount || 0), created_at: new Date().toISOString() });
             setTx(updatedTx);
             scanStatus.textContent = '저장 성공! 새로고침합니다.';
             setTimeout(() => location.reload(), 1000);

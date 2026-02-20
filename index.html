@@ -34,7 +34,6 @@
     <style>
         body {
             font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-            min-height: max(884px, 100dvh);
         }
 
         .no-scrollbar::-webkit-scrollbar {
@@ -209,6 +208,40 @@
                 </a>
             </div>
         </nav>
+    </div>
+
+    <!-- Payer Selection Modal -->
+    <div id="payerModal"
+        class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center hidden opacity-0 transition-opacity">
+        <div class="bg-surface-dark rounded-t-3xl sm:rounded-3xl w-full max-w-md p-6 transform translate-y-full sm:translate-y-0 transition-transform duration-300 shadow-2xl"
+            id="payerModalContent">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">결제자 선택</h3>
+                <button id="closePayerModal" class="text-slate-400 hover:text-white transition-colors"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <p class="text-slate-400 text-sm mb-6">스캔/업로드 전에 어떤 분의 결제인지 알려주세요!</p>
+            <div class="grid grid-cols-3 gap-3">
+                <button
+                    class="payer-btn flex flex-col items-center justify-center bg-[#15231a] hover:bg-primary/20 hover:border-primary/50 text-slate-300 hover:text-primary transition-all rounded-2xl p-4 border border-[#2a4232]"
+                    data-payer="me">
+                    <span class="material-symbols-outlined mb-2 text-2xl">person</span>
+                    <span class="text-sm font-bold" id="modalMeAlias">나</span>
+                </button>
+                <button
+                    class="payer-btn flex flex-col items-center justify-center bg-[#15231a] hover:bg-indigo-500/20 hover:border-indigo-500/50 text-slate-300 hover:text-indigo-400 transition-all rounded-2xl p-4 border border-[#2a4232]"
+                    data-payer="you">
+                    <span class="material-symbols-outlined mb-2 text-2xl">favorite</span>
+                    <span class="text-sm font-bold" id="modalYouAlias">상대방</span>
+                </button>
+                <button
+                    class="payer-btn flex flex-col items-center justify-center bg-[#15231a] hover:bg-emerald-500/20 hover:border-emerald-500/50 text-slate-300 hover:text-emerald-400 transition-all rounded-2xl p-4 border border-[#2a4232]"
+                    data-payer="together">
+                    <span class="material-symbols-outlined mb-2 text-2xl">diversity_1</span>
+                    <span class="text-sm font-bold">함께</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="./dashboard.js"></script>

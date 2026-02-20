@@ -57,6 +57,30 @@
             <section
                 class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5 space-y-4">
                 <div class="flex items-center gap-3 border-b border-slate-100 dark:border-white/5 pb-3">
+                    <span class="material-symbols-outlined text-primary">badge</span>
+                    <h2 class="text-lg font-bold">사용자 호칭 설정</h2>
+                </div>
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-sm text-slate-500 dark:text-slate-400 font-medium">내 호칭 (예: 민수)</label>
+                        <input type="text" id="meAliasInput"
+                            class="w-full rounded-xl bg-slate-50 dark:bg-[#15231a] border-none px-4 py-3 text-sm font-bold placeholder-slate-400 focus:ring-1 focus:ring-primary transition-colors text-slate-900 dark:text-white"
+                            placeholder="나" />
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm text-slate-500 dark:text-slate-400 font-medium">상대방 호칭 (예: 이쁜이)</label>
+                        <input type="text" id="youAliasInput"
+                            class="w-full rounded-xl bg-slate-50 dark:bg-[#15231a] border-none px-4 py-3 text-sm font-bold placeholder-slate-400 focus:ring-1 focus:ring-primary transition-colors text-slate-900 dark:text-white"
+                            placeholder="상대방" />
+                    </div>
+                    <button id="saveAliasBtn"
+                        class="w-full bg-primary/20 text-primary border border-primary/30 font-bold px-4 py-3 rounded-xl hover:bg-primary/30 transition-colors">호칭
+                        저장</button>
+                </div>
+            </section>
+            <section
+                class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5 space-y-4">
+                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-white/5 pb-3">
                     <span class="material-symbols-outlined text-primary">target</span>
                     <h2 class="text-lg font-bold">공동 예산 설정</h2>
                 </div>
@@ -153,7 +177,18 @@
         </nav>
 
         <script type="module">
-            import { getKey, setKey, getBudget, setBudget, setTx } from './app.js';
+            import { getKey, setKey, getBudget, setBudget, setTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias } from './app.js';
+
+            const meInp = document.getElementById('meAliasInput');
+            const youInp = document.getElementById('youAliasInput');
+            meInp.value = getMeAlias();
+            youInp.value = getYouAlias();
+
+            document.getElementById('saveAliasBtn').onclick = () => {
+                setMeAlias(meInp.value.trim() || '나');
+                setYouAlias(youInp.value.trim() || '상대방');
+                alert('호칭이 저장되었습니다.');
+            };
 
             const keyInp = document.getElementById('keyInput');
             keyInp.value = getKey();

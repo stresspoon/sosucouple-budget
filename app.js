@@ -9,6 +9,11 @@ const BUDGET_KEY = 'couple_monthly_budget';
 export function getBudget() { return Number(localStorage.getItem(BUDGET_KEY)) || 1500000; }
 export function setBudget(v) { localStorage.setItem(BUDGET_KEY, Number(v) || 1500000); }
 
+export function getMeAlias() { return localStorage.getItem('alias_me') || '나'; }
+export function setMeAlias(v) { localStorage.setItem('alias_me', v || '나'); }
+export function getYouAlias() { return localStorage.getItem('alias_you') || '상대방'; }
+export function setYouAlias(v) { localStorage.setItem('alias_you', v || '상대방'); }
+
 export function getTx() {
   try {
     const data = JSON.parse(localStorage.getItem(TX) || '[]');
@@ -31,10 +36,27 @@ export function ymd(d) {
 }
 
 export function getPayerLabel(payer) {
-  if (payer === 'me') return '나';
-  if (payer === 'you') return '상대방';
+  if (payer === 'me') return getMeAlias();
+  if (payer === 'you') return getYouAlias();
   if (payer === 'together') return '함께';
-  return '나';
+  return getMeAlias();
+}
+
+export function loadDummyData() {
+  const d = getTx();
+  if (d.length > 0) return;
+  const m = ym();
+  const dummy = [
+    { tx_date: `${m}-01`, merchant: "스타벅스", amount: 15300, category: "카페", payer: "me", memo: "", items: [] },
+    { tx_date: `${m}-05`, merchant: "이마트", amount: 125000, category: "식비", payer: "together", memo: "", items: [] },
+    { tx_date: `${m}-12`, merchant: "CGV", amount: 30000, category: "문화생활", payer: "you", memo: "", items: [] },
+    { tx_date: `${m}-18`, merchant: "무신사", amount: 89000, category: "쇼핑", payer: "me", memo: "", items: [] },
+    { tx_date: `${m}-20`, merchant: "올리브영", amount: 45000, category: "쇼핑", payer: "you", memo: "", items: [] },
+    { tx_date: `${m}-25`, merchant: "돼지게티", amount: 24000, category: "식비", payer: "me", memo: "", items: [] },
+    { tx_date: `${m}-28`, merchant: "택시비", amount: 11000, category: "교통", payer: "you", memo: "", items: [] },
+  ];
+  setTx(dummy);
+  location.reload();
 }
 
 export const catIconRecord = {

@@ -55,14 +55,33 @@ function render() {
         const cacheKey = 'gemini_insight_' + month;
         const cached = localStorage.getItem(cacheKey);
 
+        const isTestMode = true; // 임시: 지금 테스트를 위해 항시 열림 상태 유지
+        const realCurrentMonth = ym(new Date());
+        let canGenerate = true;
+        let lockMsg = "";
+
+        if (!isTestMode && month === realCurrentMonth) {
+            canGenerate = false;
+            lockMsg = "해당 월이 종료된 후, 다음 달 1일에 리포트를 생성할 수 있습니다!";
+        }
+
         if (cached) {
             aiInsightResult.innerHTML = cached;
+            btnAiInsight.disabled = false;
             btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">refresh</span> <span>다시 분석하기</span>';
             btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/50 hover:bg-slate-800/70 text-slate-400 transition-colors text-xs font-bold py-3 rounded-xl border border-white/10 flex items-center justify-center gap-2 shadow-sm";
         } else {
-            aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 지출 데이터가 모두 모였습니다. 객관적이고 예리한 AI의 소비 패턴 분석을 시작해보세요!</p>';
-            btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">magic_button</span> <span>이번 달 리포트 생성하기 (월 1회 권장)</span>';
-            btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
+            if (canGenerate) {
+                aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 지출 데이터가 모두 모였습니다. 객관적이고 예리한 AI의 소비 패턴 분석을 시작해보세요!</p>';
+                btnAiInsight.disabled = false;
+                btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">magic_button</span> <span>이번 달 리포트 생성하기 (월 1회 권장)</span>';
+                btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
+            } else {
+                aiInsightResult.innerHTML = `<p class="text-xs text-slate-400 leading-relaxed font-normal">${lockMsg}</p>`;
+                btnAiInsight.disabled = true;
+                btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">lock</span> <span>다음 달 오픈 예정</span>';
+                btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm";
+            }
         }
 
         btnAiInsight.onclick = async () => {
