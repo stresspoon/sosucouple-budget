@@ -4,6 +4,11 @@ const CATS = ['식비', '카페', '교통', '쇼핑', '의료', '주거', '문�
 
 export function getKey() { return localStorage.getItem(KEY) || ''; }
 export function setKey(v) { localStorage.setItem(KEY, v || ''); }
+
+const BUDGET_KEY = 'couple_monthly_budget';
+export function getBudget() { return Number(localStorage.getItem(BUDGET_KEY)) || 1500000; }
+export function setBudget(v) { localStorage.setItem(BUDGET_KEY, Number(v) || 1500000); }
+
 export function getTx() {
   try {
     const data = JSON.parse(localStorage.getItem(TX) || '[]');

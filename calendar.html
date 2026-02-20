@@ -94,10 +94,10 @@
         </div>
     </section>
 
-    <!-- Floating Add Button -->
-    <button onclick="window.location.href='/add'"
-        class="fixed bottom-[110px] right-6 w-14 h-14 bg-primary text-background-dark rounded-full shadow-[0_4px_15px_rgba(19,236,91,0.4)] flex items-center justify-center z-30 active:scale-95 transition-transform">
-        <span class="material-symbols-outlined text-3xl">add</span>
+    <!-- Floating Add Button -> Changed to Photo Camera per user request -->
+    <button onclick="window.location.href='/'"
+        class="fixed bottom-[110px] right-6 w-14 h-14 bg-primary text-background-dark rounded-full shadow-[0_4px_15px_rgba(19,236,91,0.4)] flex items-center justify-center z-30 active:scale-95 transition-transform border border-white/20">
+        <span class="material-symbols-outlined text-3xl">photo_camera</span>
     </button>
 
     <div id="dayDrawer"
@@ -139,6 +139,15 @@
                     <span class="material-symbols-outlined text-primary text-[28px] fill-current">calendar_month</span>
                 </div>
                 <span class="text-[10px] font-medium text-primary">달력</span>
+            </a>
+            <a class="flex flex-col items-center gap-1 group w-16" href="/settings">
+                <div
+                    class="relative flex items-center justify-center p-1 rounded-full transition-colors group-hover:bg-slate-200 dark:group-hover:bg-slate-800">
+                    <span
+                        class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">person</span>
+                </div>
+                <span
+                    class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">설정</span>
             </a>
         </div>
     </nav>
