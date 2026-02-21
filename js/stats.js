@@ -130,7 +130,7 @@ async function render() {
         const cached = localStorage.getItem(cacheKey);
         const isDownloaded = localStorage.getItem(downloadKey) === 'true';
 
-        const isTestMode = false;
+        const isTestMode = true;
         const realCurrentMonth = ym(new Date());
         let canGenerate = true;
         let lockMsg = "";
