@@ -1,4 +1,5 @@
-import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, parseReceiptWithGemini, addTx, getKey, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer, checkAndSetRedMode } from './app.js';
+import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, getPayerLabel, handleReceiptScan, escapeHtml, toRelativePayer, checkAndSetRedMode, checkRedModeCache } from './app.js';
+checkRedModeCache();
 
 const colors = [
     { name: 'green', code: '#13ec5b', fill: 'bg-[#13ec5b]/20 text-[#13ec5b]' },
@@ -13,13 +14,69 @@ const colors = [
 let cur = new Date();
 let currentMode = 'cat'; // 'cat' or 'payer'
 
+// Color map for award cards
+const awardColorMap = {
+    orange: { bg: 'bg-orange-500/10', text: 'text-orange-500', title: 'text-orange-400' },
+    purple: { bg: 'bg-purple-500/10', text: 'text-purple-500', title: 'text-purple-400' },
+    blue:   { bg: 'bg-blue-500/10', text: 'text-blue-500', title: 'text-blue-400' },
+    pink:   { bg: 'bg-pink-500/10', text: 'text-pink-500', title: 'text-pink-400' },
+    green:  { bg: 'bg-emerald-500/10', text: 'text-emerald-500', title: 'text-emerald-400' },
+    red:    { bg: 'bg-red-500/10', text: 'text-red-500', title: 'text-red-400' },
+    amber:  { bg: 'bg-amber-500/10', text: 'text-amber-500', title: 'text-amber-400' },
+};
+
+function renderGeminiModal(data) {
+    const geminiModal = document.getElementById('geminiModal');
+    const subtitle = document.getElementById('geminiSubtitle');
+    const awards = document.getElementById('geminiAwards');
+    const commentBox = document.getElementById('geminiComment');
+    const commentText = document.getElementById('geminiCommentText');
+
+    if (!data || !data.awards) {
+        awards.innerHTML = '<p class="text-sm text-slate-400">리포트 데이터를 불러올 수 없습니다.</p>';
+        commentBox.classList.add('hidden');
+        geminiModal.classList.remove('hidden');
+        setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
+        return;
+    }
+
+    // Subtitle
+    subtitle.textContent = escapeHtml(data.subtitle || '');
+
+    // Awards
+    awards.innerHTML = data.awards.map(a => {
+        const c = awardColorMap[a.color] || awardColorMap.orange;
+        return `<div class="flex items-center gap-3 bg-[#1c2e22] p-3 rounded-xl border border-[#2a4232]">
+            <div class="w-12 h-12 rounded-lg ${c.bg} flex items-center justify-center text-2xl shadow-inner ${c.text}">
+                <span class="material-symbols-outlined">${escapeHtml(a.icon || 'emoji_events')}</span>
+            </div>
+            <div class="text-left flex-1">
+                <h3 class="text-sm font-bold ${c.title}">${escapeHtml(a.title || '')}</h3>
+                <p class="text-xs text-slate-400">${escapeHtml(a.desc || '')}</p>
+            </div>
+            <span class="text-xl">${a.emoji || ''}</span>
+        </div>`;
+    }).join('');
+
+    // Comment
+    if (data.comment) {
+        commentBox.classList.remove('hidden');
+        commentText.innerHTML = escapeHtml(data.comment);
+    } else {
+        commentBox.classList.add('hidden');
+    }
+
+    // Show modal
+    geminiModal.classList.remove('hidden');
+    setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
+}
+
 async function render() {
     const month = ym(cur);
     document.getElementById('yearDisplay').textContent = `${cur.getFullYear()}년`;
     document.getElementById('monthDisplay').textContent = `${cur.getMonth() + 1}월`;
 
-    const allTx = await getTx();
-    const tx = allTx.filter(t => t.tx_date?.startsWith(month));
+    const tx = await getTx(month);
 
     let total = 0;
     let meAmt = 0;
@@ -68,8 +125,8 @@ async function render() {
         aiInsightBox.classList.add('hidden');
     } else {
         aiInsightBox.classList.remove('hidden');
-        const cacheKey = 'gemini_insight_v2_' + month;
-        const downloadKey = 'gemini_download_v2_' + month;
+        const cacheKey = 'gemini_insight_v3_' + month;
+        const downloadKey = 'gemini_download_v3_' + month;
         const cached = localStorage.getItem(cacheKey);
         const isDownloaded = localStorage.getItem(downloadKey) === 'true';
 
@@ -83,25 +140,23 @@ async function render() {
             lockMsg = "해당 월이 종료된 후, 다음 달 1일에 리포트를 생성할 수 있습니다!";
         }
 
-        const geminiModal = document.getElementById('geminiModal');
-        const geminiModalContent = document.getElementById('geminiModalContent');
-
         if (cached) {
             if (isDownloaded) {
                 aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 리포트를 성공적으로 저장하셨네요! 다음 달 1일에 새로운 분석으로 만나요.</p>';
                 btnAiInsight.disabled = true;
                 btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">hourglass_empty</span> <span>다음 달 리포트를 기다려주세요</span>';
-                btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm border border-white/5";
+                btnAiInsight.className = "relative z-10 w-full bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm border border-white/5";
             } else {
                 aiInsightResult.innerHTML = '<p class="text-xs text-primary leading-relaxed font-bold">아직 리포트를 보관하기 전이에요! 이미지를 다운로드해서 꼭 소장해보세요.</p>';
                 btnAiInsight.disabled = false;
                 btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">visibility</span> <span>이번 달 리포트 계속 훔쳐보기</span>';
-                btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
+                btnAiInsight.className = "relative z-10 w-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
 
                 btnAiInsight.onclick = () => {
-                    geminiModalContent.innerHTML = cached;
-                    geminiModal.classList.remove('hidden');
-                    setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
+                    try {
+                        const data = JSON.parse(cached);
+                        renderGeminiModal(data);
+                    } catch { renderGeminiModal(null); }
                 };
             }
         } else {
@@ -109,18 +164,16 @@ async function render() {
                 aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">최신 데이터로 준비를 마쳤습니다! 아래 버튼을 눌러 새로워진 AI 분석 리포트를 확인해보세요.</p>';
                 btnAiInsight.disabled = false;
                 btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">magic_button</span> <span>이번 달 리포트 생성하기 (월 1회 권장)</span>';
-                btnAiInsight.className = "relative z-10 w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
+                btnAiInsight.className = "relative z-10 w-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
 
                 btnAiInsight.onclick = async () => {
                     btnAiInsight.disabled = true;
                     btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> <span>분석 중... (약 5-10초 소요)</span>';
                     try {
-                        const resHtml = await generateMonthlyInsight(month, tx);
-                        localStorage.setItem(cacheKey, resHtml);
-                        geminiModalContent.innerHTML = resHtml;
+                        const data = await generateMonthlyInsight(month, tx);
+                        localStorage.setItem(cacheKey, JSON.stringify(data));
+                        renderGeminiModal(data);
                         render(); // update button state
-                        geminiModal.classList.remove('hidden');
-                        setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
                     } catch (err) {
                         alert(err.message);
                         render();
@@ -129,10 +182,10 @@ async function render() {
                     }
                 };
             } else {
-                aiInsightResult.innerHTML = `<p class="text-xs text-slate-400 leading-relaxed font-normal">${lockMsg}</p>`;
+                aiInsightResult.innerHTML = `<p class="text-xs text-slate-400 leading-relaxed font-normal">${escapeHtml(lockMsg)}</p>`;
                 btnAiInsight.disabled = true;
                 btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">lock</span> <span>다음 달 오픈 예정</span>';
-                btnAiInsight.className = "relative z-10 w-full mt-4 bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm border border-white/5";
+                btnAiInsight.className = "relative z-10 w-full bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm border border-white/5";
             }
         }
     }
@@ -147,19 +200,28 @@ async function render() {
                 render(); // Reload outer states immediately once it's closed
             }, 300);
         };
-        document.getElementById('downloadGeminiBtn').onclick = () => {
+        document.getElementById('downloadGeminiBtn').onclick = async () => {
+            // Lazy-load html2canvas on first use
+            if (typeof html2canvas === 'undefined') {
+                await new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+                    s.onload = resolve;
+                    s.onerror = () => reject(new Error('html2canvas 로드 실패'));
+                    document.head.appendChild(s);
+                });
+            }
             const content = document.getElementById('geminiModalContent');
-            const cacheKey = 'gemini_download_v2_' + month;
-            html2canvas(content, { backgroundColor: '#131e16' }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `Gemini_월간분석_${month}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+            const cacheKey = 'gemini_download_v3_' + month;
+            const canvas = await html2canvas(content, { backgroundColor: '#15231a' });
+            const link = document.createElement('a');
+            link.download = `Gemini_커플리포트_${month}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
 
-                localStorage.setItem(cacheKey, 'true');
-                alert("리포트가 이미지로 저장되었습니다!\n모달을 닫으시면 새로 생성 버튼이 잠깁니다.");
-                document.getElementById('closeGeminiModal').click();
-            });
+            localStorage.setItem(cacheKey, 'true');
+            alert("리포트가 이미지로 저장되었습니다!\n모달을 닫으시면 새로 생성 버튼이 잠깁니다.");
+            document.getElementById('closeGeminiModal').click();
         };
     }
 
@@ -301,10 +363,8 @@ if (modalCameraInput) {
     modalCameraInput.onchange = async (e) => {
         const f = e.target.files[0];
         if (!f) return;
-        if (!getKey()) { alert('설정에서 Gemini API 키를 먼저 등록해주세요.'); return; }
         try {
-            const r = await parseReceiptWithGemini(f, getKey());
-            await addTx({ ...r, payer: toAbsolutePayer(selectedPayer), amount: Number(r.amount || 0) });
+            await handleReceiptScan(f, selectedPayer);
             location.reload();
         } catch (err) {
             alert('영수증 인식 실패: ' + err.message);

@@ -9,25 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#13ec5b",
-                        "background-light": "#f6f8f6",
-                        "background-dark": "#102216",
-                    },
-                    fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
-                    },
-                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "full": "9999px" },
-                },
-            },
-        }
-    </script>
+    <!-- html2canvas is lazy-loaded by stats.js on demand -->
+    <script src="/js/tailwind-config.js"></script>
     <style>
         ::-webkit-scrollbar {
             width: 0px;
@@ -54,6 +37,7 @@
     <link rel="apple-touch-icon" href="/icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </head>
 
 <body
@@ -124,54 +108,55 @@
 
             </div>
             <div id="aiInsightBox"
-                class="mt-8 rounded-2xl bg-gradient-to-br from-[#1c2e22] to-[#121b16] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-primary/20 relative overflow-hidden hidden">
-                <div class="absolute -right-4 -top-4 opacity-[0.03]"><span
-                        class="material-symbols-outlined text-9xl">auto_awesome</span></div>
-                <div class="flex items-center gap-2 mb-4 relative z-10">
-                    <span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
-                    <h2 class="text-sm font-bold text-white">Gemini 커플 월간 분석</h2>
+                class="mt-8 rounded-2xl p-[1px] bg-neon-gradient shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden hidden">
+                <div class="bg-[#15231a] rounded-[15px] p-5 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-[0.03]"><span
+                            class="material-symbols-outlined text-9xl">auto_awesome</span></div>
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-primary/5 rounded-full blur-[40px] pointer-events-none"></div>
+                    <div class="flex items-center gap-2 mb-4 relative z-10">
+                        <div class="w-8 h-8 bg-gradient-to-br from-slate-800 to-black rounded-full border border-slate-700 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-lg text-transparent bg-clip-text bg-gradient-to-r from-primary via-gemini-blue to-gemini-purple" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+                        </div>
+                        <h2 class="text-sm font-bold text-white">Gemini 커플 리포트</h2>
+                    </div>
+                    <div id="aiInsightResult" class="relative z-10 text-slate-300 mb-4">
+                        <!-- Results or Loading UI -->
+                    </div>
+                    <button id="btnAiInsight"
+                        class="relative z-10 w-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm">
+                        <span class="material-symbols-outlined text-[16px]">magic_button</span> <span>이번 달 리포트 생성하기 (월 1회
+                            권장)</span>
+                    </button>
                 </div>
-                <div id="aiInsightResult" class="relative z-10 text-slate-300 mb-4">
-                    <!-- Results or Loading UI -->
-                </div>
-                <button id="btnAiInsight"
-                    class="relative z-10 w-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm">
-                    <span class="material-symbols-outlined text-[16px]">magic_button</span> <span>이번 달 리포트 생성하기 (월 1회
-                        권장)</span>
-                </button>
             </div>
         </main>
         <nav
-            class="sticky bottom-0 z-30 w-full border-t border-slate-200 bg-white/90 px-6 pt-3 backdrop-blur-md dark:border-white/5 dark:bg-[#15231b]/90 shrink-0" style="padding-bottom: max(env(safe-area-inset-bottom, 20px), 20px);">
-            <div class="flex justify-between">
-                <a class="group flex flex-1 flex-col items-center gap-1" href="/">
-                    <span
-                        class="material-symbols-outlined text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">home</span>
-                    <span
-                        class="text-[10px] font-medium text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">홈</span>
+            class="sticky bottom-0 z-30 w-full border-t border-slate-200 dark:border-[#2a4232] bg-background-light dark:bg-[#15231a] px-2 pt-3 backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95 shrink-0" style="padding-bottom: max(env(safe-area-inset-bottom, 20px), 20px);">
+            <div class="flex justify-between items-center px-4">
+                <a class="flex flex-col items-center gap-1 group w-16" href="/">
+                    <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">home</span>
+                    <span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">홈</span>
                 </a>
-                <a class="group flex flex-1 flex-col items-center gap-1" href="/stats">
-                    <span class="material-symbols-outlined fill-current text-primary">donut_small</span>
+                <a class="flex flex-col items-center gap-1 group w-16" href="/stats">
+                    <div class="relative flex items-center justify-center p-1 rounded-full transition-colors bg-primary/10">
+                        <span class="material-symbols-outlined text-primary text-[28px] fill-current">donut_small</span>
+                    </div>
                     <span class="text-[10px] font-medium text-primary">통계</span>
                 </a>
-                <div class="relative -top-8 flex flex-1 justify-center">
+                <div class="relative -top-8 flex w-16 justify-center">
                     <button
                         onclick="document.getElementById('payerModal').classList.remove('hidden'); setTimeout(() => { document.getElementById('payerModal').classList.remove('opacity-0'); document.getElementById('payerModalContent').classList.remove('translate-y-full'); }, 10); window.currentUploadAction = 'camera';"
                         class="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-black shadow-lg shadow-primary/40 transition-transform hover:scale-105 active:scale-95 border-4 border-background-light dark:border-background-dark">
                         <span class="material-symbols-outlined text-3xl">photo_camera</span>
                     </button>
                 </div>
-                <a class="group flex flex-1 flex-col items-center gap-1" href="/calendar">
-                    <span
-                        class="material-symbols-outlined text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">calendar_month</span>
-                    <span
-                        class="text-[10px] font-medium text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">달력</span>
+                <a class="flex flex-col items-center gap-1 group w-16" href="/calendar">
+                    <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">calendar_month</span>
+                    <span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">달력</span>
                 </a>
-                <a class="group flex flex-1 flex-col items-center gap-1" href="/settings">
-                    <span
-                        class="material-symbols-outlined text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">person</span>
-                    <span
-                        class="text-[10px] font-medium text-slate-400 transition-colors group-hover:text-primary dark:text-slate-500 dark:group-hover:text-primary">설정</span>
+                <a class="flex flex-col items-center gap-1 group w-16" href="/settings">
+                    <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[28px]">person</span>
+                    <span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">설정</span>
                 </a>
             </div>
         </nav>
@@ -213,25 +198,45 @@
         <input id="modalCameraInput" type="file" accept="image/*" capture="environment" class="hidden">
     </div>
 
-    <!-- Gemini Fullscreen Modal -->
+    <!-- Gemini Report Modal (Overlay Style) -->
     <div id="geminiModal"
-        class="fixed inset-0 z-[60] bg-background-light dark:bg-background-dark flex flex-col hidden opacity-0 transition-opacity duration-300">
-        <div class="flex items-center justify-between p-4 border-b border-primary/20 bg-[#1c2e22]">
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
-                <h2 class="text-sm font-bold text-white">Gemini 커플 월간 분석</h2>
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="relative w-full max-w-sm rounded-3xl p-[2px] bg-neon-gradient shadow-[0_0_30px_rgba(19,236,91,0.2)]">
+            <div class="bg-[#15231a] rounded-[22px] p-6 relative overflow-hidden flex flex-col items-center text-center max-h-[85dvh] overflow-y-auto" id="geminiModalContent">
+                <!-- Close Button -->
+                <button id="closeGeminiModal" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors z-30">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
+                <!-- Glow Effect -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/10 rounded-full blur-[60px] pointer-events-none"></div>
+                <!-- AI Icon -->
+                <div class="relative mb-6">
+                    <div class="w-20 h-20 bg-gradient-to-br from-slate-800 to-black rounded-full border border-slate-700 flex items-center justify-center shadow-lg relative z-10">
+                        <span class="material-symbols-outlined text-4xl text-transparent bg-clip-text bg-gradient-to-r from-primary via-gemini-blue to-gemini-purple" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+                    </div>
+                    <div class="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-[#102216] text-xs font-bold border-2 border-[#15231a] z-20">AI</div>
+                </div>
+                <!-- Title -->
+                <h2 class="text-xl font-bold text-white mb-1">Gemini 커플 리포트</h2>
+                <p id="geminiSubtitle" class="text-xs text-slate-400 mb-6 uppercase tracking-wider"></p>
+                <!-- Awards Container -->
+                <div id="geminiAwards" class="w-full space-y-3 mb-6">
+                    <!-- Award cards injected by JS -->
+                </div>
+                <!-- Comment Box -->
+                <div id="geminiComment" class="relative bg-gradient-to-r from-primary/10 to-gemini-blue/10 p-5 rounded-xl border border-primary/20 mb-6 w-full hidden">
+                    <div class="absolute -top-2 left-4 px-2 bg-[#15231a] text-[10px] text-primary font-bold">GEMINI SAYS</div>
+                    <p id="geminiCommentText" class="text-sm text-slate-200 leading-relaxed text-left"></p>
+                </div>
+                <!-- Download Button -->
+                <div class="w-full">
+                    <button id="downloadGeminiBtn"
+                        class="w-full py-3 px-4 rounded-xl bg-primary text-[#102216] text-sm font-bold hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                        <span class="material-symbols-outlined text-lg">download</span>
+                        저장하기
+                    </button>
+                </div>
             </div>
-            <button id="closeGeminiModal" class="p-2 text-slate-400 hover:text-white transition-colors"><span
-                    class="material-symbols-outlined">close</span></button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-[#1c2e22] to-[#121b16]" id="geminiModalContent">
-            <!-- Full Insight Report Goes Here -->
-        </div>
-        <div class="p-4 border-t border-primary/20 bg-background-dark">
-            <button id="downloadGeminiBtn"
-                class="w-full bg-primary text-black font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] transition-transform">
-                <span class="material-symbols-outlined text-xl">download</span> 보고서 이미지로 저장하기
-            </button>
         </div>
     </div>
 

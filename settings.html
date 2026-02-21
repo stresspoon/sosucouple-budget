@@ -9,25 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#13ec5b",
-                        "background-light": "#f6f8f6",
-                        "background-dark": "#102216",
-                        "surface-dark": "#1c2e22",
-                    },
-                    fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
-                    },
-                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "full": "9999px" },
-                },
-            },
-        }
-    </script>
+    <script src="/js/tailwind-config.js"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar {
             display: none;
@@ -43,6 +25,7 @@
     <link rel="apple-touch-icon" href="/icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </head>
 
 <body
@@ -142,10 +125,9 @@
                             placeholder="AI Key 입력..." />
                         <button id="saveKeyBtn"
                             class="w-full bg-primary/20 text-primary border border-primary/30 font-bold px-4 py-3 rounded-xl hover:bg-primary/30 transition-colors">API
-                            키 안전하게 저장</button>
+                            키 저장</button>
                     </div>
-                    <p class="text-[11px] text-slate-400 mt-2">입력한 키는 브라우저 내부(localStorage)에만 안전하게 저장되며, 영수증 사진을 분석하여
-                        내용을 추출하는 데에만 사용됩니다.</p>
+                    <p class="text-[11px] text-slate-400 mt-2">입력한 키는 브라우저 localStorage에 저장됩니다. 공용 기기에서는 사용을 피하고, 사용 후 키를 삭제하세요. 영수증 사진 분석에만 사용됩니다.</p>
                 </div>
             </section>
 
@@ -264,7 +246,7 @@
         </div>
 
         <script type="module">
-            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, parseReceiptWithGemini, addTx, getMyRole, setMyRole, toAbsolutePayer, checkRedModeCache } from './js/app.js';
+            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, addTx, getMyRole, setMyRole, toAbsolutePayer, checkRedModeCache, handleReceiptScan } from './js/app.js';
             checkRedModeCache();
 
             const meInp = document.getElementById('meAliasInput');
@@ -280,7 +262,6 @@
             };
 
             // Role picker
-            const currentRole = getMyRole();
             function updateRoleUI(role) {
                 document.querySelectorAll('.role-btn').forEach(btn => {
                     if (btn.dataset.role === role) {
@@ -291,12 +272,13 @@
                 });
             }
             function updateRoleLabels() {
+                const role = getMyRole();
                 const me = getMeAlias();
                 const you = getYouAlias();
-                document.getElementById('role1Label').textContent = currentRole === '1' ? me : you;
-                document.getElementById('role2Label').textContent = currentRole === '1' ? you : me;
+                document.getElementById('role1Label').textContent = role === '1' ? me : you;
+                document.getElementById('role2Label').textContent = role === '1' ? you : me;
             }
-            updateRoleUI(currentRole);
+            updateRoleUI(getMyRole());
             updateRoleLabels();
             document.querySelectorAll('.role-btn').forEach(btn => {
                 btn.onclick = () => {
@@ -353,11 +335,8 @@
             document.getElementById('modalCameraInput').onchange = async (e) => {
                 const f = e.target.files[0];
                 if (!f) return;
-                if (!getKey()) { alert('설정에서 Gemini API 키를 먼저 등록해주세요.'); return; }
                 try {
-                    const r = await parseReceiptWithGemini(f, getKey());
-                    await addTx({ ...r, payer: toAbsolutePayer(selectedSettingsPayer), amount: Number(r.amount || 0) });
-                    alert('영수증이 등록되었습니다!');
+                    await handleReceiptScan(f, selectedSettingsPayer);
                     location.reload();
                 } catch (err) {
                     alert('영수증 인식 실패: ' + err.message);

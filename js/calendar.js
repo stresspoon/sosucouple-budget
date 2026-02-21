@@ -1,4 +1,5 @@
-import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer, checkAndSetRedMode } from './app.js';
+import { getTx, won, ym, getCatIconInfo, getMeAlias, getYouAlias, getPayerBadgeHtml, handleReceiptScan, escapeHtml, toRelativePayer, checkAndSetRedMode, checkRedModeCache } from './app.js';
+checkRedModeCache();
 
 let cur = new Date();
 const drawer = document.getElementById('dayDrawer');
@@ -12,8 +13,7 @@ async function render() {
     const mStr = `${cur.getFullYear()}년 ${cur.getMonth() + 1}월`;
     document.getElementById('monthTitle').textContent = mStr;
 
-    const allTx = await getTx();
-    const currTx = allTx.filter(t => t.tx_date?.startsWith(month));
+    const currTx = await getTx(month);
 
     let totalMonth = 0;
     let togetherSum = 0;
@@ -100,17 +100,7 @@ function showDay(dateStr, txList, totalDayAmt) {
 
     listE.innerHTML = txList.map(t => {
         const c = getCatIconInfo(t.category);
-
-        let payerBadge = '';
-        const payerType = toRelativePayer(t.payer);
-        const payerLabel = getPayerLabel(t.payer);
-        if (payerType === 'me') {
-            payerBadge = `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2">${escapeHtml(payerLabel)}</span>`;
-        } else if (payerType === 'you') {
-            payerBadge = `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2">${escapeHtml(payerLabel)}</span>`;
-        } else if (payerType === 'together') {
-            payerBadge = `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 border border-primary/30">${escapeHtml(payerLabel)}</span>`;
-        }
+        const payerBadge = getPayerBadgeHtml(t.payer);
 
         // Generate inner items (세부 내역) if any
         let itemsHtml = '';
@@ -177,10 +167,8 @@ if (modalCameraInput) {
     modalCameraInput.onchange = async (e) => {
         const f = e.target.files[0];
         if (!f) return;
-        if (!getKey()) { alert('설정에서 Gemini API 키를 먼저 등록해주세요.'); return; }
         try {
-            const r = await parseReceiptWithGemini(f, getKey());
-            await addTx({ ...r, payer: toAbsolutePayer(selectedPayer), amount: Number(r.amount || 0) });
+            await handleReceiptScan(f, selectedPayer);
             location.reload();
         } catch (err) {
             alert('영수증 인식 실패: ' + err.message);

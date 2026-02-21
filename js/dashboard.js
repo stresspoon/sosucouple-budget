@@ -1,12 +1,11 @@
-import { getKey, getTx, addTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, getMeAlias, getYouAlias, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer, checkAndSetRedMode } from './app.js';
+import { getKey, getTx, won, ym, getCatIconInfo, getBudget, getMeAlias, getYouAlias, getPayerBadgeHtml, handleReceiptScan, escapeHtml, toRelativePayer, toAbsolutePayer, checkAndSetRedMode, checkRedModeCache } from './app.js';
 
+checkRedModeCache();
 const BUDGET = getBudget();
 
 // Data Load (top-level await — no DOMContentLoaded needed for modules)
 const m = ym();
-const allTx = await getTx();
-
-const currTx = allTx.filter(t => t.tx_date?.startsWith(m));
+const currTx = await getTx(m);
 
 let total = 0, me = 0, you = 0, together = 0;
 currTx.forEach(t => {
@@ -31,18 +30,19 @@ const sharedRatio = total > 0 ? Math.round((together / total) * 100) : 0;
 document.getElementById('sharedPercentage').textContent = `공동 ${sharedRatio}%`;
 
 // Budget Bar
+document.getElementById('budgetTotal').textContent = won(BUDGET);
 const budgetPerc = Math.min(100, Math.round((total / BUDGET) * 100));
 const budgetBar = document.getElementById('budgetBar');
 budgetBar.style.width = `${budgetPerc}%`;
 const left = BUDGET - total;
 if (left < 0) {
-    document.getElementById('budgetLeft').textContent = `-${won(Math.abs(left))}`;
+    document.getElementById('budgetLeft').textContent = `-${won(Math.abs(left))}원`;
     document.getElementById('budgetLeft').classList.replace('text-primary', 'text-red-500');
     budgetBar.classList.replace('from-primary', 'from-red-500');
     budgetBar.classList.replace('to-[#0fb845]', 'to-red-600');
     document.getElementById('budgetAlert').classList.remove('hidden');
 } else {
-    document.getElementById('budgetLeft').textContent = won(left);
+    document.getElementById('budgetLeft').textContent = `${won(left)}원`;
 }
 
 // Recent List
@@ -53,17 +53,7 @@ if (recentTx.length === 0) {
 } else {
     recentList.innerHTML = recentTx.map(t => {
         const catInfo = getCatIconInfo(t.category);
-
-        let payerBadge = '';
-        const payerType = toRelativePayer(t.payer);
-        const payerLabel = getPayerLabel(t.payer);
-        if (payerType === 'me') {
-            payerBadge = `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">${escapeHtml(payerLabel)}</span>`;
-        } else if (payerType === 'you') {
-            payerBadge = `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">${escapeHtml(payerLabel)}</span>`;
-        } else if (payerType === 'together') {
-            payerBadge = `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5 border border-primary/30">${escapeHtml(payerLabel)}</span>`;
-        }
+        const payerBadge = getPayerBadgeHtml(t.payer);
 
         return `
     <a href="/add?id=${t.id}" class="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-[#1c2e22] border border-transparent dark:border-[#2a4232] hover:border-primary/30 transition-all cursor-pointer active:scale-[0.98]">
@@ -146,8 +136,7 @@ const handleScan = async (e) => {
     scanStatus.classList.replace('text-red-500', 'text-primary');
     scanStatus.textContent = '영수증 인식 중입니다...';
     try {
-        const r = await parseReceiptWithGemini(f, getKey());
-        await addTx({ ...r, payer: toAbsolutePayer(selectedTempPayer), amount: Number(r.amount || 0) });
+        await handleReceiptScan(f, selectedTempPayer);
         scanStatus.textContent = '저장 성공! 새로고침합니다.';
         setTimeout(() => location.reload(), 1000);
     } catch (err) {
