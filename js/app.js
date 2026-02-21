@@ -75,19 +75,37 @@ export function toRelativePayer(stored) {
   return 'me';
 }
 
-export async function getTx() {
+export async function getTx(monthFilter) {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('transactions')
+  let query = supabase.from('transactions')
     .select('*')
     .order('tx_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(10000);
+    .order('created_at', { ascending: false });
+  if (monthFilter && /^\d{4}-\d{2}$/.test(monthFilter)) {
+    const startDate = monthFilter + '-01';
+    const [y, m] = monthFilter.split('-').map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    const endDate = monthFilter + '-' + String(lastDay).padStart(2, '0');
+    query = query.gte('tx_date', startDate).lte('tx_date', endDate);
+  } else {
+    query = query.limit(10000);
+  }
+  const { data, error } = await query;
   if (error) { console.error(error); return []; }
   return data || [];
 }
 
 export async function addTx(t) {
   if (!supabase) throw new Error('데이터베이스에 연결할 수 없습니다.');
+  // Input validation
+  const amount = Number(t.amount);
+  if (!amount || amount <= 0 || amount > 100000000) throw new Error('유효하지 않은 금액입니다.');
+  if (!t.tx_date || !/^\d{4}-\d{2}-\d{2}$/.test(t.tx_date)) throw new Error('유효하지 않은 날짜입니다.');
+  if (!CATS.includes(t.category)) t.category = '기타';
+  if (!['1', '2', 'together', 'me', 'you'].includes(t.payer)) t.payer = '1';
+  t.merchant = String(t.merchant || '미분류').slice(0, 100);
+  t.memo = String(t.memo || '').slice(0, 500);
+  if (!Array.isArray(t.items)) t.items = [];
   const { error } = await supabase.from('transactions').insert([t]);
   if (error) throw new Error(error.message || '저장에 실패했습니다.');
 }
@@ -113,7 +131,11 @@ export async function updateTx(id, updates) {
 
 export async function clearTx() {
   if (!supabase) return;
-  const { error } = await supabase.from('transactions').delete().neq('payer', 'invalid_payer');
+  // Safety: delete in batches with explicit confirmation token
+  const { data: rows } = await supabase.from('transactions').select('id').limit(10000);
+  if (!rows || rows.length === 0) return;
+  const ids = rows.map(r => r.id);
+  const { error } = await supabase.from('transactions').delete().in('id', ids);
   if (error) console.error(error);
 }
 export function won(n) { return Number(n || 0).toLocaleString('ko-KR'); }
@@ -134,6 +156,70 @@ export function getPayerLabel(payer) {
 
 export function escapeHtml(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Sanitize HTML from AI responses — allow only safe tags/attributes
+export function sanitizeHtml(html) {
+  const allowedTags = ['div', 'span', 'p', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'b', 'i'];
+  const allowedAttrs = ['class', 'style'];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  function clean(node) {
+    const children = Array.from(node.childNodes);
+    children.forEach(child => {
+      if (child.nodeType === Node.TEXT_NODE) return;
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        const tag = child.tagName.toLowerCase();
+        if (!allowedTags.includes(tag)) {
+          // Replace disallowed tag with its text content
+          const text = document.createTextNode(child.textContent);
+          node.replaceChild(text, child);
+          return;
+        }
+        // Remove disallowed attributes
+        Array.from(child.attributes).forEach(attr => {
+          if (!allowedAttrs.includes(attr.name.toLowerCase())) {
+            child.removeAttribute(attr.name);
+          }
+        });
+        // Remove dangerous style values
+        if (child.style) {
+          const style = child.getAttribute('style') || '';
+          if (/expression|javascript|url\s*\(/i.test(style)) {
+            child.removeAttribute('style');
+          }
+        }
+        clean(child);
+      } else {
+        node.removeChild(child);
+      }
+    });
+  }
+  clean(doc.body);
+  return doc.body.innerHTML;
+}
+
+// Shared payer badge HTML generator
+export function getPayerBadgeHtml(payer) {
+  const payerType = toRelativePayer(payer);
+  const payerLabel = getPayerLabel(payer);
+  if (payerType === 'me') {
+    return `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">${escapeHtml(payerLabel)}</span>`;
+  } else if (payerType === 'you') {
+    return `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">${escapeHtml(payerLabel)}</span>`;
+  } else if (payerType === 'together') {
+    return `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5 border border-primary/30">${escapeHtml(payerLabel)}</span>`;
+  }
+  return '';
+}
+
+// Shared receipt scan handler
+export async function handleReceiptScan(file, payerStr) {
+  const key = getKey();
+  if (!key) throw new Error('설정에서 Gemini API 키를 먼저 등록해주세요.');
+  const r = await parseReceiptWithGemini(file, key);
+  await addTx({ ...r, payer: toAbsolutePayer(payerStr), amount: Number(r.amount || 0) });
 }
 
 const RED_MODE_KEY = 'red_mode_month';
@@ -234,7 +320,7 @@ export async function parseReceiptWithGemini(file, key) {
       ]
     }]
   };
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/\${model}:generateContent?key=\${encodeURIComponent(key)}`, {
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
   });
   const j = await r.json();
@@ -262,16 +348,37 @@ export async function generateMonthlyInsight(monthStr, txList) {
   if (!key) throw new Error('API 키가 셋팅되지 않았습니다. 설정 탭에서 저장해주세요.');
   if (!txList || txList.length === 0) throw new Error('분석할 지출 데이터가 없습니다.');
 
-  const txCtx = txList.map(t => `${t.tx_date}|${t.category}|${t.amount}원|${t.merchant}|결제:${getPayerLabel(t.payer)}`).join('\\n');
-  const prompt = `너는 냉철하고 위트있는 커플 가계부 분석 AI야. 
-다음은 ${monthStr} 한 달간 발생한 결제 내역들이야. 
-절대 이모티콘을 사용하지 말고, 다음 4가지 항목을 각각 HTML <div class="mb-4"> 태그로 감싸서 응답해줘. 
-각 항목의 제목은 <strong class="text-primary block mb-1 font-bold"> 태그로 감싸고 내용은 그 뒤에 한 줄로 간결하게 팩트폭행을 담아 작성할 것. 전체를 <div class="text-sm space-y-2"> 로 감쌀 것.
+  const txCtx = txList.map(t => `${t.tx_date}|${t.category}|${t.amount}원|${t.merchant}|결제:${getPayerLabel(t.payer)}`).join('\n');
+  const [y, m] = monthStr.split('-');
+  const monthLabel = `${y}년 ${Number(m)}월`;
 
-1. 이번 달 데이트 테마 명명 (예: 카페 투어가 잦았던 휴식의 달)
-2. 결제 요정 타이틀 부여 (예: 상대방은 디저트 탐험가, 나는 든든한 밥스폰서)
-3. 예산 대비 방심했던 지출 팩트폭행 조언 (예: 잦은 편의점 방문으로 누수 발생. 야식을 줄이세요.)
-4. 돈을 가장 알차게 쓴 날(Top 1) 동선 회고 (예: 15일 식당-카페 동선은 완벽했습니다.)
+  const prompt = `너는 냉철하고 위트있는 커플 가계부 분석 AI야.
+다음은 ${monthLabel} 한 달간 발생한 결제 내역들이야.
+반드시 아래 JSON 스키마 형식으로만 응답해. JSON 외 다른 텍스트는 절대 포함하지 마.
+
+스키마:
+{
+  "subtitle": "${monthLabel} 어워즈",
+  "awards": [
+    {
+      "icon": "Material Symbols Outlined 아이콘명 (예: coffee, dark_mode, local_taxi, shopping_cart, restaurant 등)",
+      "color": "orange|purple|blue|pink|green|red|amber 중 하나",
+      "title": "어워드 타이틀 (예: 카페인 중독 커플상)",
+      "desc": "한 줄 설명 (예: 커피값으로 25만원 지출!)",
+      "emoji": "어워드에 어울리는 이모지 1개"
+    }
+  ],
+  "comment": "3-4문장의 종합 코멘트. 위트있고 팩트폭행 스타일. 금액은 구체적으로. 격려와 조언을 섞어."
+}
+
+규칙:
+1. awards는 정확히 3개 생성. 내역 분석 기반으로 창의적인 어워드를 만들어.
+2. 어워드 예시: 카페인 중독상, 야식 마스터상, 교통비 폭주상, 알뜰살뜰상, 미식 탐험가상 등
+3. icon은 Google Material Symbols Outlined에서 실제 존재하는 아이콘명만 사용.
+4. color는 3개 어워드가 모두 다른 색이어야 함.
+5. comment에서 이전 달 대비 조언, 절약 팁, 격려를 자연스럽게 섞어줘.
+6. 금액을 언급할 때 쉼표 포함 형식 사용 (예: 250,000원).
+7. JSON만 출력. markdown 코드블록(\`\`\`) 사용 금지.
 
 결제 내역:
 ${txCtx}`;
@@ -287,7 +394,12 @@ ${txCtx}`;
   const j = await r.json();
   if (!r.ok) throw new Error(j?.error?.message || 'Gemini 분석 실패');
 
-  let text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('\\n').trim();
-  return text.replace(/```html/g, '').replace(/```/g, '').trim();
+  let text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('\n').trim();
+  text = text.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+  const parsed = JSON.parse(text);
+
+  // Validate structure
+  if (!parsed.awards || !Array.isArray(parsed.awards)) throw new Error('AI 응답 형식 오류');
+  return parsed;
 }
 

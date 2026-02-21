@@ -13,24 +13,7 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#13ec5b",
-                        "background-light": "#f6f8f6",
-                        "background-dark": "#102216",
-                    },
-                    fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
-                    },
-                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
-                },
-            },
-        }
-    </script>
+    <script src="/js/tailwind-config.js"></script>
     <style>
         body {
             font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -50,6 +33,7 @@
     <link rel="apple-touch-icon" href="/icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </head>
 
 <body
@@ -151,7 +135,7 @@
                                 <div class="flex justify-between text-xs font-medium">
                                     <span class="text-slate-300">공동 예산 <span id="budgetAlert"
                                             class="hidden text-red-400 font-bold">(초과 경고!)</span></span>
-                                    <span class="text-white"><span id="totalExpSmall">0</span> / 1,500,000원</span>
+                                    <span class="text-white"><span id="totalExpSmall">0</span> / <span id="budgetTotal">0</span>원</span>
                                 </div>
                                 <div class="h-3 w-full bg-slate-800 rounded-full overflow-hidden">
                                     <div id="budgetBar"
@@ -159,7 +143,7 @@
                                     </div>
                                 </div>
                                 <p class="text-xs text-slate-500 text-right pt-1">예산 잔액: <span id="budgetLeft"
-                                        class="text-primary font-bold">1,500,000원</span></p>
+                                        class="text-primary font-bold">0원</span></p>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="bg-[#15231a] p-3 rounded-xl border border-[#2a4232]">
