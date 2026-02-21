@@ -1,4 +1,4 @@
-import { getKey, getTx, addTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
+import { getKey, getTx, addTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, getMeAlias, getYouAlias, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer } from './app.js';
 
 const BUDGET = getBudget();
 
@@ -12,9 +12,10 @@ let total = 0, me = 0, you = 0, together = 0;
 currTx.forEach(t => {
     const a = Number(t.amount || 0);
     total += a;
-    if (t.payer === 'me') me += a;
-    else if (t.payer === 'you') you += a;
-    else if (t.payer === 'together') together += a;
+    const rel = toRelativePayer(t.payer);
+    if (rel === 'me') me += a;
+    else if (rel === 'you') you += a;
+    else if (rel === 'together') together += a;
     else me += a;
 });
 
@@ -52,12 +53,13 @@ if (recentTx.length === 0) {
         const catInfo = getCatIconInfo(t.category);
 
         let payerBadge = '';
+        const payerType = toRelativePayer(t.payer);
         const payerLabel = getPayerLabel(t.payer);
-        if (t.payer === 'me') {
+        if (payerType === 'me') {
             payerBadge = `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">${escapeHtml(payerLabel)}</span>`;
-        } else if (t.payer === 'you') {
+        } else if (payerType === 'you') {
             payerBadge = `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5">${escapeHtml(payerLabel)}</span>`;
-        } else if (t.payer === 'together') {
+        } else if (payerType === 'together') {
             payerBadge = `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 relative -top-0.5 border border-primary/30">${escapeHtml(payerLabel)}</span>`;
         }
 
@@ -143,7 +145,7 @@ const handleScan = async (e) => {
     scanStatus.textContent = '영수증 인식 중입니다...';
     try {
         const r = await parseReceiptWithGemini(f, getKey());
-        await addTx({ ...r, payer: selectedTempPayer, amount: Number(r.amount || 0) });
+        await addTx({ ...r, payer: toAbsolutePayer(selectedTempPayer), amount: Number(r.amount || 0) });
         scanStatus.textContent = '저장 성공! 새로고침합니다.';
         setTimeout(() => location.reload(), 1000);
     } catch (err) {

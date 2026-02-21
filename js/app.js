@@ -52,6 +52,29 @@ export function setMeAlias(v) { localStorage.setItem('alias_me', v || '나'); }
 export function getYouAlias() { return localStorage.getItem('alias_you') || '상대방'; }
 export function setYouAlias(v) { localStorage.setItem('alias_you', v || '상대방'); }
 
+export function getMyRole() { return localStorage.getItem('device_role') || '1'; }
+export function setMyRole(v) { localStorage.setItem('device_role', v); }
+
+export function toAbsolutePayer(relative) {
+  if (relative === 'together') return 'together';
+  const my = getMyRole();
+  const other = my === '1' ? '2' : '1';
+  if (relative === 'me') return my;
+  if (relative === 'you') return other;
+  return my;
+}
+
+export function toRelativePayer(stored) {
+  if (stored === 'together') return 'together';
+  const my = getMyRole();
+  if (stored === my) return 'me';
+  if (stored === '1' || stored === '2') return 'you';
+  // Legacy: 'me'/'you' — treat 'me' as role '1', 'you' as role '2'
+  if (stored === 'me') return my === '1' ? 'me' : 'you';
+  if (stored === 'you') return my === '1' ? 'you' : 'me';
+  return 'me';
+}
+
 export async function getTx() {
   if (!supabase) return [];
   const { data, error } = await supabase.from('transactions')
@@ -102,9 +125,10 @@ export function ymd(d) {
 }
 
 export function getPayerLabel(payer) {
-  if (payer === 'me') return getMeAlias();
-  if (payer === 'you') return getYouAlias();
-  if (payer === 'together') return '함께';
+  const rel = toRelativePayer(payer);
+  if (rel === 'me') return getMeAlias();
+  if (rel === 'you') return getYouAlias();
+  if (rel === 'together') return '함께';
   return getMeAlias();
 }
 
@@ -184,7 +208,7 @@ export async function generateMonthlyInsight(monthStr, txList) {
   if (!key) throw new Error('API 키가 셋팅되지 않았습니다. 설정 탭에서 저장해주세요.');
   if (!txList || txList.length === 0) throw new Error('분석할 지출 데이터가 없습니다.');
 
-  const txCtx = txList.map(t => `${t.tx_date}|${t.category}|${t.amount}원|${t.merchant}|결제:${t.payer}`).join('\\n');
+  const txCtx = txList.map(t => `${t.tx_date}|${t.category}|${t.amount}원|${t.merchant}|결제:${getPayerLabel(t.payer)}`).join('\\n');
   const prompt = `너는 냉철하고 위트있는 커플 가계부 분석 AI야. 
 다음은 ${monthStr} 한 달간 발생한 결제 내역들이야. 
 절대 이모티콘을 사용하지 말고, 다음 4가지 항목을 각각 HTML <div class="mb-4"> 태그로 감싸서 응답해줘. 

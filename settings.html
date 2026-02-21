@@ -89,6 +89,29 @@
             <section
                 class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5 space-y-4">
                 <div class="flex items-center gap-3 border-b border-slate-100 dark:border-white/5 pb-3">
+                    <span class="material-symbols-outlined text-primary">smartphone</span>
+                    <h2 class="text-lg font-bold">이 기기의 역할</h2>
+                </div>
+                <p class="text-xs text-slate-400">커플 중 누구의 폰인지 선택하세요. 각자의 폰에서 다르게 설정해야 결제자가 올바르게 표시됩니다.</p>
+                <div class="grid grid-cols-2 gap-3" id="roleSelector">
+                    <button id="roleBtn1" data-role="1"
+                        class="role-btn flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all">
+                        <span class="material-symbols-outlined text-2xl mb-1">person</span>
+                        <span class="text-sm font-bold" id="role1Label">1번</span>
+                        <span class="text-[10px] text-slate-400 mt-0.5">먼저 설치한 사람</span>
+                    </button>
+                    <button id="roleBtn2" data-role="2"
+                        class="role-btn flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all">
+                        <span class="material-symbols-outlined text-2xl mb-1">person_check</span>
+                        <span class="text-sm font-bold" id="role2Label">2번</span>
+                        <span class="text-[10px] text-slate-400 mt-0.5">나중에 초대받은 사람</span>
+                    </button>
+                </div>
+            </section>
+
+            <section
+                class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5 space-y-4">
+                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-white/5 pb-3">
                     <span class="material-symbols-outlined text-primary">target</span>
                     <h2 class="text-lg font-bold">공동 예산 설정</h2>
                 </div>
@@ -241,7 +264,7 @@
         </div>
 
         <script type="module">
-            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, parseReceiptWithGemini, addTx } from './app.js';
+            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, parseReceiptWithGemini, addTx, getMyRole, setMyRole, toAbsolutePayer } from './js/app.js';
 
             const meInp = document.getElementById('meAliasInput');
             const youInp = document.getElementById('youAliasInput');
@@ -251,8 +274,36 @@
             document.getElementById('saveAliasBtn').onclick = () => {
                 setMeAlias(meInp.value.trim() || '나');
                 setYouAlias(youInp.value.trim() || '상대방');
+                updateRoleLabels();
                 alert('호칭이 저장되었습니다.');
             };
+
+            // Role picker
+            const currentRole = getMyRole();
+            function updateRoleUI(role) {
+                document.querySelectorAll('.role-btn').forEach(btn => {
+                    if (btn.dataset.role === role) {
+                        btn.className = 'role-btn flex flex-col items-center justify-center py-4 rounded-xl border-2 border-primary bg-primary/10 text-primary transition-all';
+                    } else {
+                        btn.className = 'role-btn flex flex-col items-center justify-center py-4 rounded-xl border-2 border-white/10 text-slate-400 hover:border-white/20 transition-all';
+                    }
+                });
+            }
+            function updateRoleLabels() {
+                const me = getMeAlias();
+                const you = getYouAlias();
+                document.getElementById('role1Label').textContent = currentRole === '1' ? me : you;
+                document.getElementById('role2Label').textContent = currentRole === '1' ? you : me;
+            }
+            updateRoleUI(currentRole);
+            updateRoleLabels();
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.onclick = () => {
+                    setMyRole(btn.dataset.role);
+                    updateRoleUI(btn.dataset.role);
+                    updateRoleLabels();
+                };
+            });
 
             const keyInp = document.getElementById('keyInput');
             keyInp.value = getKey();
@@ -304,7 +355,7 @@
                 if (!getKey()) { alert('설정에서 Gemini API 키를 먼저 등록해주세요.'); return; }
                 try {
                     const r = await parseReceiptWithGemini(f, getKey());
-                    await addTx({ ...r, payer: selectedSettingsPayer, amount: Number(r.amount || 0) });
+                    await addTx({ ...r, payer: toAbsolutePayer(selectedSettingsPayer), amount: Number(r.amount || 0) });
                     alert('영수증이 등록되었습니다!');
                     location.reload();
                 } catch (err) {

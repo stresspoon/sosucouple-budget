@@ -1,4 +1,4 @@
-import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, parseReceiptWithGemini, addTx, getKey, getPayerLabel, escapeHtml } from './app.js';
+import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, parseReceiptWithGemini, addTx, getKey, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer } from './app.js';
 
 const colors = [
     { name: 'green', code: '#13ec5b', fill: 'bg-[#13ec5b]/20 text-[#13ec5b]' },
@@ -34,9 +34,10 @@ async function render() {
         const amt = Number(t.amount || 0);
         total += amt;
 
-        if (t.payer === 'me') payerMap['me'] += amt;
-        else if (t.payer === 'you') payerMap['you'] += amt;
-        else if (t.payer === 'together') payerMap['together'] += amt;
+        const rel = toRelativePayer(t.payer);
+        if (rel === 'me') payerMap['me'] += amt;
+        else if (rel === 'you') payerMap['you'] += amt;
+        else if (rel === 'together') payerMap['together'] += amt;
 
         const cat = t.category || '기타';
         catMap[cat] = (catMap[cat] || 0) + amt;
@@ -189,25 +190,55 @@ async function render() {
                 currentOffset += percNumber;
             }
 
-            // List rendering
+            // Get transactions for this category/payer
+            const catTxList = currentMode === 'cat'
+                ? tx.filter(t => (t.category || '기타') === catTitle)
+                : tx.filter(t => getPayerLabel(t.payer) === catTitle);
+
+            const txItemsHtml = catTxList.map(t => {
+                const ci = getCatIconInfo(t.category);
+                return `<a href="/add?id=${t.id}" class="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer active:scale-[0.98]">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg ${ci.bgColor} flex items-center justify-center ${ci.textColor}">
+                            <span class="material-symbols-outlined text-[16px]">${ci.icon}</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-white">${escapeHtml(t.merchant || '미분류')}</span>
+                            <span class="text-[10px] text-slate-400">${t.tx_date.slice(5)}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-bold text-white">-₩${Number(t.amount || 0).toLocaleString()}</span>
+                        <span class="material-symbols-outlined text-[14px] text-slate-500">chevron_right</span>
+                    </div>
+                </a>`;
+            }).join('');
+
+            const rowId = `stats-row-${index}`;
             const cIcon = getCatIconInfo(catTitle);
 
             listEl.innerHTML += `
-    <div class="group flex items-center justify-between rounded-xl bg-white p-4 shadow-sm transition-all hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10">
-        <div class="flex items-center gap-4">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full ${colorObj.fill}">
-                <span class="material-symbols-outlined">${cIcon.icon}</span>
-            </div>
-            <div class="flex flex-col">
-                <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-900 dark:text-white">${escapeHtml(catTitle)}</span>
-                    <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-white/10 dark:text-slate-400">${percString}</span>
+    <div>
+        <div class="group flex items-center justify-between rounded-xl bg-white p-4 shadow-sm transition-all hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 cursor-pointer" onclick="const el=document.getElementById('${rowId}');el.classList.toggle('hidden');this.querySelector('.expand-icon').classList.toggle('rotate-180')">
+            <div class="flex items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full ${colorObj.fill}">
+                    <span class="material-symbols-outlined">${cIcon.icon}</span>
                 </div>
-                <span class="text-xs text-slate-500 dark:text-slate-400">총 ${currentMode === 'cat' ? tx.filter(t => (t.category || '기타') === catTitle).length : tx.filter(t => getPayerLabel(t.payer) === catTitle).length}건</span>
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-900 dark:text-white">${escapeHtml(catTitle)}</span>
+                        <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-white/10 dark:text-slate-400">${percString}</span>
+                    </div>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">총 ${catTxList.length}건</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 dark:text-white">${won(val)}</span>
+                <span class="expand-icon material-symbols-outlined text-[18px] text-slate-400 transition-transform duration-200">expand_more</span>
             </div>
         </div>
-        <div class="flex flex-col items-end">
-            <span class="font-bold text-slate-900 dark:text-white">${won(val)}</span>
+        <div id="${rowId}" class="hidden mt-1 ml-4 border-l-2 border-white/10 pl-2 space-y-0.5">
+            ${txItemsHtml}
         </div>
     </div>`;
         });
@@ -271,7 +302,7 @@ if (modalCameraInput) {
         if (!getKey()) { alert('설정에서 Gemini API 키를 먼저 등록해주세요.'); return; }
         try {
             const r = await parseReceiptWithGemini(f, getKey());
-            await addTx({ ...r, payer: selectedPayer, amount: Number(r.amount || 0) });
+            await addTx({ ...r, payer: toAbsolutePayer(selectedPayer), amount: Number(r.amount || 0) });
             location.reload();
         } catch (err) {
             alert('영수증 인식 실패: ' + err.message);

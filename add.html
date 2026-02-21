@@ -177,7 +177,7 @@
     </div>
 
     <script type="module">
-        import { addTx, updateTx, deleteTx, getTxById, ymd, getMeAlias, getYouAlias } from './app.js';
+        import { addTx, updateTx, deleteTx, getTxById, ymd, getMeAlias, getYouAlias, toAbsolutePayer, toRelativePayer } from './js/app.js';
 
         const amountInput = document.getElementById('amountInput');
         const dateInput = document.getElementById('dateInput');
@@ -216,7 +216,8 @@
                 catSelect.value = tx.category || '식비';
                 selCat.textContent = tx.category || '식비';
                 merch.value = tx.merchant || '';
-                const payerRadio = document.querySelector(`input[name="payer_type"][value="${tx.payer || 'me'}"]`);
+                const relPayer = toRelativePayer(tx.payer || 'me');
+                const payerRadio = document.querySelector(`input[name="payer_type"][value="${relPayer}"]`);
                 if (payerRadio) payerRadio.checked = true;
             } catch (err) {
                 alert('데이터를 불러올 수 없습니다: ' + err.message);
@@ -257,7 +258,7 @@
                 amount: amt,
                 category: catSelect.value,
                 merchant: merch.value.trim() || '미분류',
-                payer: payer,
+                payer: toAbsolutePayer(payer),
                 memo: '',
                 items: []
             };

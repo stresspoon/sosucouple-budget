@@ -1,4 +1,4 @@
-import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml } from './app.js';
+import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer } from './app.js';
 
 let cur = new Date();
 const drawer = document.getElementById('dayDrawer');
@@ -23,7 +23,7 @@ async function render() {
     currTx.forEach(t => {
         const amt = Number(t.amount || 0);
         totalMonth += amt;
-        if (t.payer === 'together') togetherSum += amt;
+        if (toRelativePayer(t.payer) === 'together') togetherSum += amt;
 
         map[t.tx_date] = (map[t.tx_date] || 0) + amt;
 
@@ -100,12 +100,13 @@ function showDay(dateStr, txList, totalDayAmt) {
         const c = getCatIconInfo(t.category);
 
         let payerBadge = '';
+        const payerType = toRelativePayer(t.payer);
         const payerLabel = getPayerLabel(t.payer);
-        if (t.payer === 'me') {
+        if (payerType === 'me') {
             payerBadge = `<span class="bg-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2">${escapeHtml(payerLabel)}</span>`;
-        } else if (t.payer === 'you') {
+        } else if (payerType === 'you') {
             payerBadge = `<span class="bg-indigo-900/50 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-bold ml-2">${escapeHtml(payerLabel)}</span>`;
-        } else if (t.payer === 'together') {
+        } else if (payerType === 'together') {
             payerBadge = `<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded font-bold ml-2 border border-primary/30">${escapeHtml(payerLabel)}</span>`;
         }
 
@@ -177,7 +178,7 @@ if (modalCameraInput) {
         if (!getKey()) { alert('설정에서 Gemini API 키를 먼저 등록해주세요.'); return; }
         try {
             const r = await parseReceiptWithGemini(f, getKey());
-            await addTx({ ...r, payer: selectedPayer, amount: Number(r.amount || 0) });
+            await addTx({ ...r, payer: toAbsolutePayer(selectedPayer), amount: Number(r.amount || 0) });
             location.reload();
         } catch (err) {
             alert('영수증 인식 실패: ' + err.message);
