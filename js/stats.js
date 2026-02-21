@@ -141,24 +141,20 @@ async function render() {
         }
 
         if (cached) {
-            if (isDownloaded) {
-                aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 리포트를 성공적으로 저장하셨네요! 다음 달 1일에 새로운 분석으로 만나요.</p>';
-                btnAiInsight.disabled = true;
-                btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">hourglass_empty</span> <span>다음 달 리포트를 기다려주세요</span>';
-                btnAiInsight.className = "relative z-10 w-full bg-slate-800/30 text-slate-600 cursor-not-allowed text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm border border-white/5";
-            } else {
-                aiInsightResult.innerHTML = '<p class="text-xs text-primary leading-relaxed font-bold">아직 리포트를 보관하기 전이에요! 이미지를 다운로드해서 꼭 소장해보세요.</p>';
-                btnAiInsight.disabled = false;
-                btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">visibility</span> <span>이번 달 리포트 계속 훔쳐보기</span>';
-                btnAiInsight.className = "relative z-10 w-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
+            const resultMsg = isDownloaded
+                ? '<p class="text-xs text-slate-400 leading-relaxed font-normal">이번 달 리포트를 저장하셨네요! 언제든 다시 확인할 수 있어요.</p>'
+                : '<p class="text-xs text-primary leading-relaxed font-bold">아직 리포트를 보관하기 전이에요! 이미지를 다운로드해서 꼭 소장해보세요.</p>';
+            aiInsightResult.innerHTML = resultMsg;
+            btnAiInsight.disabled = false;
+            btnAiInsight.innerHTML = '<span class="material-symbols-outlined text-[16px]">visibility</span> <span>이번 달 리포트 다시 보기</span>';
+            btnAiInsight.className = "relative z-10 w-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold py-3 rounded-xl border border-primary/30 flex items-center justify-center gap-2 shadow-sm";
 
-                btnAiInsight.onclick = () => {
-                    try {
-                        const data = JSON.parse(cached);
-                        renderGeminiModal(data);
-                    } catch { renderGeminiModal(null); }
-                };
-            }
+            btnAiInsight.onclick = () => {
+                try {
+                    const data = JSON.parse(cached);
+                    renderGeminiModal(data);
+                } catch { renderGeminiModal(null); }
+            };
         } else {
             if (canGenerate) {
                 aiInsightResult.innerHTML = '<p class="text-xs text-slate-400 leading-relaxed font-normal">최신 데이터로 준비를 마쳤습니다! 아래 버튼을 눌러 새로워진 AI 분석 리포트를 확인해보세요.</p>';
