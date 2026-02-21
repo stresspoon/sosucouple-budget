@@ -211,17 +211,57 @@ async function render() {
                     document.head.appendChild(s);
                 });
             }
-            const content = document.getElementById('geminiModalContent');
-            const cacheKey = 'gemini_download_v3_' + month;
-            const canvas = await html2canvas(content, { backgroundColor: '#15231a' });
-            const link = document.createElement('a');
-            link.download = `Gemini_커플리포트_${month}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
 
-            localStorage.setItem(cacheKey, 'true');
-            alert("리포트가 이미지로 저장되었습니다!\n모달을 닫으시면 새로 생성 버튼이 잠깁니다.");
-            document.getElementById('closeGeminiModal').click();
+            const content = document.getElementById('geminiModalContent');
+
+            // Clone the content to an off-screen element for clean capture
+            const clone = content.cloneNode(true);
+
+            // Remove UI elements that shouldn't appear in the saved image
+            clone.querySelector('#closeGeminiModal')?.remove();
+            clone.querySelector('#downloadGeminiBtn')?.parentElement?.remove();
+
+            // Material Symbols web font can't render in html2canvas (shows garbled text)
+            // Hide all icon spans to keep layout intact without broken glyphs
+            clone.querySelectorAll('.material-symbols-outlined').forEach(el => {
+                el.style.visibility = 'hidden';
+            });
+
+            // Remove overflow/height constraints so full content is captured
+            clone.classList.remove('overflow-hidden', 'overflow-y-auto', 'max-h-[85dvh]');
+            Object.assign(clone.style, {
+                position: 'fixed',
+                top: '-99999px',
+                left: '0',
+                width: content.offsetWidth + 'px',
+                maxHeight: 'none',
+                overflow: 'visible',
+                height: 'auto',
+            });
+
+            document.body.appendChild(clone);
+
+            try {
+                await new Promise(r => setTimeout(r, 50)); // Let DOM settle
+                const canvas = await html2canvas(clone, {
+                    backgroundColor: '#15231a',
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                });
+
+                const link = document.createElement('a');
+                link.download = `Gemini_커플리포트_${month}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                const cacheKey = 'gemini_download_v3_' + month;
+                localStorage.setItem(cacheKey, 'true');
+                alert("리포트가 이미지로 저장되었습니다!\n모달을 닫으시면 새로 생성 버튼이 잠깁니다.");
+                document.getElementById('closeGeminiModal').click();
+            } finally {
+                document.body.removeChild(clone);
+            }
         };
     }
 
