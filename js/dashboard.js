@@ -1,4 +1,4 @@
-import { getKey, getTx, addTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, getMeAlias, getYouAlias, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer } from './app.js';
+import { getKey, getTx, addTx, won, ym, parseReceiptWithGemini, getCatIconInfo, getBudget, getMeAlias, getYouAlias, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer, checkAndSetRedMode } from './app.js';
 
 const BUDGET = getBudget();
 
@@ -18,6 +18,8 @@ currTx.forEach(t => {
     else if (rel === 'together') together += a;
     else me += a;
 });
+
+checkAndSetRedMode(total);
 
 // Overview numbers
 document.getElementById('totalExp').textContent = won(total);

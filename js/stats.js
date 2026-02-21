@@ -1,4 +1,4 @@
-import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, parseReceiptWithGemini, addTx, getKey, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer } from './app.js';
+import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, parseReceiptWithGemini, addTx, getKey, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer, checkAndSetRedMode } from './app.js';
 
 const colors = [
     { name: 'green', code: '#13ec5b', fill: 'bg-[#13ec5b]/20 text-[#13ec5b]' },
@@ -44,6 +44,8 @@ async function render() {
     });
 
     document.getElementById('sumDisplay').textContent = won(total);
+
+    if (month === ym(new Date())) checkAndSetRedMode(total);
 
     let rows = [];
     if (currentMode === 'cat') {

@@ -136,6 +136,60 @@ export function escapeHtml(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+const RED_MODE_KEY = 'red_mode_month';
+
+export function applyRedMode() {
+  if (document.getElementById('red-mode-style')) return;
+  const style = document.createElement('style');
+  style.id = 'red-mode-style';
+  style.textContent = `
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, rgba(220,38,38,0.06) 0%, rgba(127,0,0,0.11) 100%);
+      pointer-events: none;
+      z-index: 9998;
+    }
+    .text-primary, .dark .dark\\:text-primary { color: #ef4444 !important; }
+    .bg-primary, .dark .dark\\:bg-primary { background-color: #ef4444 !important; }
+    .border-primary { border-color: #ef4444 !important; }
+    .bg-primary\\/10 { background-color: rgba(239,68,68,0.1) !important; }
+    .bg-primary\\/20 { background-color: rgba(239,68,68,0.2) !important; }
+    .bg-primary\\/30 { background-color: rgba(239,68,68,0.3) !important; }
+    .border-primary\\/20 { border-color: rgba(239,68,68,0.2) !important; }
+    .border-primary\\/30 { border-color: rgba(239,68,68,0.3) !important; }
+    .border-primary\\/50 { border-color: rgba(239,68,68,0.5) !important; }
+    .hover\\:text-primary:hover { color: #ef4444 !important; }
+    .group:hover .group-hover\\:text-primary { color: #ef4444 !important; }
+    .dark .dark\\:hover\\:text-primary:hover { color: #ef4444 !important; }
+    .dark .group:hover .dark\\:group-hover\\:text-primary { color: #ef4444 !important; }
+    .shadow-primary\\/40 { box-shadow: 0 4px 20px rgba(239,68,68,0.4) !important; }
+    .selection\\:bg-primary ::selection { background-color: #ef4444 !important; color: white !important; }
+    ::selection { background-color: #ef4444 !important; color: white !important; }
+  `;
+  document.head.appendChild(style);
+}
+
+export function checkAndSetRedMode(total) {
+  const budget = getBudget();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  if (budget > 0 && total > budget) {
+    localStorage.setItem(RED_MODE_KEY, currentMonth);
+    applyRedMode();
+  } else {
+    const stored = localStorage.getItem(RED_MODE_KEY);
+    if (stored && stored !== currentMonth) localStorage.removeItem(RED_MODE_KEY);
+  }
+}
+
+export function checkRedModeCache() {
+  const stored = localStorage.getItem(RED_MODE_KEY);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  if (stored === currentMonth) applyRedMode();
+  else if (stored) localStorage.removeItem(RED_MODE_KEY);
+}
+
 export const catIconRecord = {
   '식비': { icon: 'restaurant', bgColor: 'bg-emerald-100 dark:bg-emerald-900/20', textColor: 'text-emerald-600 dark:text-emerald-400' },
   '카페': { icon: 'coffee', bgColor: 'bg-amber-100 dark:bg-amber-900/20', textColor: 'text-amber-600 dark:text-amber-400' },

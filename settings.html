@@ -264,7 +264,8 @@
         </div>
 
         <script type="module">
-            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, parseReceiptWithGemini, addTx, getMyRole, setMyRole, toAbsolutePayer } from './js/app.js';
+            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, parseReceiptWithGemini, addTx, getMyRole, setMyRole, toAbsolutePayer, checkRedModeCache } from './js/app.js';
+            checkRedModeCache();
 
             const meInp = document.getElementById('meAliasInput');
             const youInp = document.getElementById('youAliasInput');

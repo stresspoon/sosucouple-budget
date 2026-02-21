@@ -1,4 +1,4 @@
-import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer } from './app.js';
+import { getTx, won, ym, getCatIconInfo, parseReceiptWithGemini, addTx, getKey, getMeAlias, getYouAlias, getPayerLabel, escapeHtml, toRelativePayer, toAbsolutePayer, checkAndSetRedMode } from './app.js';
 
 let cur = new Date();
 const drawer = document.getElementById('dayDrawer');
@@ -33,6 +33,8 @@ async function render() {
 
     document.getElementById('monthlyTotal').textContent = won(totalMonth);
     document.getElementById('togetherText').textContent = `공동 ${won(togetherSum)}`;
+
+    if (month === ym(new Date())) checkAndSetRedMode(totalMonth);
 
     const first = new Date(cur.getFullYear(), cur.getMonth(), 1);
     const last = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();

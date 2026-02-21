@@ -177,7 +177,8 @@
     </div>
 
     <script type="module">
-        import { addTx, updateTx, deleteTx, getTxById, ymd, getMeAlias, getYouAlias, toAbsolutePayer, toRelativePayer } from './js/app.js';
+        import { addTx, updateTx, deleteTx, getTxById, ymd, getMeAlias, getYouAlias, toAbsolutePayer, toRelativePayer, checkRedModeCache } from './js/app.js';
+        checkRedModeCache();
 
         const amountInput = document.getElementById('amountInput');
         const dateInput = document.getElementById('dateInput');
