@@ -1,4 +1,4 @@
-import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, getPayerLabel, handleReceiptScan, escapeHtml, toRelativePayer, checkAndSetRedMode, checkRedModeCache } from './app.js';
+import { getTx, ym, won, getCatIconInfo, generateMonthlyInsight, getMeAlias, getYouAlias, getPayerLabel, handleReceiptScan, escapeHtml, sanitizeHtml, toRelativePayer, checkAndSetRedMode, checkRedModeCache } from './app.js';
 checkRedModeCache();
 
 const colors = [
@@ -61,7 +61,7 @@ function renderGeminiModal(data) {
     // Comment
     if (data.comment) {
         commentBox.classList.remove('hidden');
-        commentText.innerHTML = escapeHtml(data.comment);
+        commentText.innerHTML = sanitizeHtml(data.comment);
     } else {
         commentBox.classList.add('hidden');
     }

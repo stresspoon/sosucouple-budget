@@ -368,7 +368,7 @@ export async function generateMonthlyInsight(monthStr, txList) {
       "emoji": "어워드에 어울리는 이모지 1개"
     }
   ],
-  "comment": "3-4문장의 종합 코멘트. 위트있고 팩트폭행 스타일. 금액은 구체적으로. 격려와 조언을 섞어."
+  "comment": "2~3개 문단으로 구성된 HTML 형식 코멘트. 문단 사이는 <br><br>으로 구분. 중요한 금액·수치는 <span class=\"text-primary font-bold\">금액</span> 형식으로 강조. 놓치지 말아야 할 핵심 인사이트(예: 가장 많이 쓴 카테고리, 절약 포인트)도 같은 span으로 강조. 위트있고 팩트폭행 스타일. 격려와 조언을 자연스럽게 섞어. HTML 태그 외 markdown 사용 금지."
 }
 
 규칙:
