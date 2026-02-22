@@ -28,26 +28,29 @@ const awardColorMap = {
 function renderGeminiModal(data) {
     const geminiModal = document.getElementById('geminiModal');
     const subtitle = document.getElementById('geminiSubtitle');
-    const awards = document.getElementById('geminiAwards');
+    const awardsEl = document.getElementById('geminiAwards');
     const commentBox = document.getElementById('geminiComment');
     const commentText = document.getElementById('geminiCommentText');
+    const slideTrack = document.getElementById('geminiSlideTrack');
+    const dot1 = document.getElementById('geminiDot1');
+    const dot2 = document.getElementById('geminiDot2');
 
     if (!data || !data.awards) {
-        awards.innerHTML = '<p class="text-sm text-slate-400">리포트 데이터를 불러올 수 없습니다.</p>';
+        awardsEl.innerHTML = '<p class="text-sm text-slate-400 py-4">리포트 데이터를 불러올 수 없습니다.</p>';
         commentBox.classList.add('hidden');
+        dot2.style.display = 'none';
         geminiModal.classList.remove('hidden');
         setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
         return;
     }
 
-    // Subtitle
-    subtitle.textContent = escapeHtml(data.subtitle || '');
-
-    // Awards
-    awards.innerHTML = data.awards.map(a => {
+    // Slide 1: header + awards
+    // Store emoji in data attribute for clean export (no Material Symbols in html2canvas)
+    subtitle.textContent = data.subtitle || '';
+    awardsEl.innerHTML = data.awards.map(a => {
         const c = awardColorMap[a.color] || awardColorMap.orange;
         return `<div class="flex items-center gap-3 bg-[#1c2e22] p-3 rounded-xl border border-[#2a4232]">
-            <div class="w-12 h-12 rounded-lg ${c.bg} flex items-center justify-center text-2xl shadow-inner ${c.text}">
+            <div class="w-12 h-12 rounded-lg ${c.bg} flex items-center justify-center text-2xl shadow-inner ${c.text}" data-award-emoji="${escapeHtml(a.emoji || '')}">
                 <span class="material-symbols-outlined">${escapeHtml(a.icon || 'emoji_events')}</span>
             </div>
             <div class="text-left flex-1">
@@ -58,15 +61,48 @@ function renderGeminiModal(data) {
         </div>`;
     }).join('');
 
-    // Comment
-    if (data.comment) {
+    // Slide 2: GEMINI SAYS — strip material-symbols spans to prevent export garbling
+    const hasComment = !!data.comment;
+    if (hasComment) {
         commentBox.classList.remove('hidden');
-        commentText.innerHTML = sanitizeHtml(data.comment);
+        const tmp = document.createElement('div');
+        tmp.innerHTML = sanitizeHtml(data.comment);
+        tmp.querySelectorAll('.material-symbols-outlined').forEach(el => el.remove());
+        commentText.innerHTML = tmp.innerHTML;
     } else {
         commentBox.classList.add('hidden');
     }
 
-    // Show modal
+    // Dot 2 visibility
+    dot2.style.display = hasComment ? '' : 'none';
+
+    // Slide navigation
+    let currentSlide = 0;
+    function goToSlide(idx) {
+        currentSlide = Math.max(0, Math.min(idx, hasComment ? 1 : 0));
+        slideTrack.style.transform = currentSlide === 1 ? 'translateX(-50%)' : 'translateX(0)';
+        dot1.classList.toggle('bg-primary', currentSlide === 0);
+        dot1.classList.toggle('w-4', currentSlide === 0);
+        dot1.classList.toggle('bg-white/20', currentSlide !== 0);
+        dot1.classList.toggle('w-2', currentSlide !== 0);
+        dot2.classList.toggle('bg-primary', currentSlide === 1);
+        dot2.classList.toggle('w-4', currentSlide === 1);
+        dot2.classList.toggle('bg-white/20', currentSlide !== 1);
+        dot2.classList.toggle('w-2', currentSlide !== 1);
+    }
+    dot1.onclick = () => goToSlide(0);
+    dot2.onclick = () => goToSlide(1);
+
+    // Touch swipe
+    const viewport = document.getElementById('geminiSlideViewport');
+    let touchStartX = 0;
+    viewport.ontouchstart = e => { touchStartX = e.touches[0].clientX; };
+    viewport.ontouchend = e => {
+        const dx = touchStartX - e.changedTouches[0].clientX;
+        if (Math.abs(dx) > 50) goToSlide(currentSlide + (dx > 0 ? 1 : -1));
+    };
+
+    goToSlide(0);
     geminiModal.classList.remove('hidden');
     setTimeout(() => geminiModal.classList.remove('opacity-0'), 10);
 }
@@ -197,7 +233,6 @@ async function render() {
             }, 300);
         };
         document.getElementById('downloadGeminiBtn').onclick = async () => {
-            // Lazy-load html2canvas on first use
             if (typeof html2canvas === 'undefined') {
                 await new Promise((resolve, reject) => {
                     const s = document.createElement('script');
@@ -208,55 +243,85 @@ async function render() {
                 });
             }
 
-            const content = document.getElementById('geminiModalContent');
+            async function captureSlide(slideEl) {
+                const clone = slideEl.cloneNode(true);
 
-            // Clone the content to an off-screen element for clean capture
-            const clone = content.cloneNode(true);
-
-            // Remove UI elements that shouldn't appear in the saved image
-            clone.querySelector('#closeGeminiModal')?.remove();
-            clone.querySelector('#downloadGeminiBtn')?.parentElement?.remove();
-
-            // Material Symbols web font can't render in html2canvas (shows garbled text)
-            // Hide all icon spans to keep layout intact without broken glyphs
-            clone.querySelectorAll('.material-symbols-outlined').forEach(el => {
-                el.style.visibility = 'hidden';
-            });
-
-            // Remove overflow/height constraints so full content is captured
-            clone.classList.remove('overflow-hidden', 'overflow-y-auto', 'max-h-[85dvh]');
-            Object.assign(clone.style, {
-                position: 'fixed',
-                top: '-99999px',
-                left: '0',
-                width: content.offsetWidth + 'px',
-                maxHeight: 'none',
-                overflow: 'visible',
-                height: 'auto',
-            });
-
-            document.body.appendChild(clone);
-
-            try {
-                await new Promise(r => setTimeout(r, 50)); // Let DOM settle
-                const canvas = await html2canvas(clone, {
-                    backgroundColor: '#15231a',
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
+                // Replace award icon boxes (data-award-emoji) with the award emoji
+                // This avoids Material Symbols garbling in html2canvas
+                clone.querySelectorAll('[data-award-emoji]').forEach(el => {
+                    const emoji = el.getAttribute('data-award-emoji');
+                    el.innerHTML = `<span style="font-size:22px;line-height:1;">${emoji}</span>`;
                 });
 
-                const link = document.createElement('a');
-                link.download = `Gemini_커플리포트_${month}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                // Replace smart_toy icon with robot emoji, hide all other Material Symbols
+                clone.querySelectorAll('.material-symbols-outlined').forEach(el => {
+                    if (el.textContent.trim() === 'smart_toy') {
+                        el.removeAttribute('class');
+                        el.style.cssText = 'font-size:2rem;font-family:system-ui,sans-serif;display:block;';
+                        el.textContent = '🤖';
+                    } else {
+                        el.textContent = '';
+                        el.style.display = 'none';
+                    }
+                });
+
+                // Remove flex/overflow constraints for full-height capture
+                Object.assign(clone.style, {
+                    position: 'fixed',
+                    top: '-99999px',
+                    left: '0',
+                    flex: 'none',
+                    width: slideEl.offsetWidth + 'px',
+                    maxHeight: 'none',
+                    overflow: 'visible',
+                    height: 'auto',
+                    background: '#15231a',
+                    borderRadius: '16px',
+                });
+                clone.classList.remove('overflow-y-auto');
+
+                document.body.appendChild(clone);
+                try {
+                    await new Promise(r => setTimeout(r, 80));
+                    return await html2canvas(clone, {
+                        backgroundColor: '#15231a',
+                        scale: 2,
+                        useCORS: true,
+                        logging: false,
+                    });
+                } finally {
+                    document.body.removeChild(clone);
+                }
+            }
+
+            try {
+                const slide1 = document.getElementById('geminiSlide1');
+                const slide2 = document.getElementById('geminiSlide2');
+                const commentBox = document.getElementById('geminiComment');
+
+                // Save slide 1 (어워즈)
+                const canvas1 = await captureSlide(slide1);
+                const link1 = document.createElement('a');
+                link1.download = `커플리포트_${month}_어워즈.png`;
+                link1.href = canvas1.toDataURL('image/png');
+                link1.click();
+
+                // Save slide 2 (GEMINI SAYS) if it has content
+                if (!commentBox.classList.contains('hidden')) {
+                    await new Promise(r => setTimeout(r, 400));
+                    const canvas2 = await captureSlide(slide2);
+                    const link2 = document.createElement('a');
+                    link2.download = `커플리포트_${month}_GEMINI_SAYS.png`;
+                    link2.href = canvas2.toDataURL('image/png');
+                    link2.click();
+                }
 
                 const cacheKey = 'gemini_download_v3_' + month;
                 localStorage.setItem(cacheKey, 'true');
-                alert("리포트가 이미지로 저장되었습니다!\n모달을 닫으시면 새로 생성 버튼이 잠깁니다.");
+                alert('리포트를 2장 이미지로 저장했습니다!');
                 document.getElementById('closeGeminiModal').click();
-            } finally {
-                document.body.removeChild(clone);
+            } catch (err) {
+                alert('저장 실패: ' + err.message);
             }
         };
     }

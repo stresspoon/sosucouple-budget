@@ -198,42 +198,52 @@
         <input id="modalCameraInput" type="file" accept="image/*" capture="environment" class="hidden">
     </div>
 
-    <!-- Gemini Report Modal (Overlay Style) -->
+    <!-- Gemini Report Modal (Slide Style) -->
     <div id="geminiModal"
         class="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 hidden opacity-0 transition-opacity duration-300">
         <div class="relative w-full max-w-sm rounded-3xl p-[2px] bg-neon-gradient shadow-[0_0_30px_rgba(19,236,91,0.2)]">
-            <div class="bg-[#15231a] rounded-[22px] p-6 relative overflow-hidden flex flex-col items-center text-center max-h-[85dvh] overflow-y-auto" id="geminiModalContent">
+            <div class="bg-[#15231a] rounded-[22px] relative overflow-hidden flex flex-col" style="max-height: 85dvh;">
+                <!-- Ambient Glow -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/10 rounded-full blur-[60px] pointer-events-none z-0"></div>
                 <!-- Close Button -->
                 <button id="closeGeminiModal" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors z-30">
                     <span class="material-symbols-outlined text-2xl">close</span>
                 </button>
-                <!-- Glow Effect -->
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/10 rounded-full blur-[60px] pointer-events-none"></div>
-                <!-- AI Icon -->
-                <div class="relative mb-6">
-                    <div class="w-20 h-20 bg-gradient-to-br from-slate-800 to-black rounded-full border border-slate-700 flex items-center justify-center shadow-lg relative z-10">
-                        <span class="material-symbols-outlined text-4xl text-transparent bg-clip-text bg-gradient-to-r from-primary via-gemini-blue to-gemini-purple" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+                <!-- Slide Viewport -->
+                <div id="geminiSlideViewport" class="flex-1 overflow-hidden relative z-10" style="min-height: 0;">
+                    <div id="geminiSlideTrack" class="flex h-full transition-transform duration-300" style="width: 200%;">
+                        <!-- Slide 1: Header + Awards -->
+                        <div id="geminiSlide1" class="overflow-y-auto p-6 pt-10 flex flex-col items-center text-center" style="flex: 0 0 50%;">
+                            <div class="relative mb-5">
+                                <div class="w-20 h-20 bg-gradient-to-br from-slate-800 to-black rounded-full border border-slate-700 flex items-center justify-center shadow-lg relative z-10">
+                                    <span class="material-symbols-outlined text-4xl text-transparent bg-clip-text bg-gradient-to-r from-primary via-gemini-blue to-gemini-purple" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+                                </div>
+                                <div class="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-[#102216] text-xs font-bold border-2 border-[#15231a] z-20">AI</div>
+                            </div>
+                            <h2 class="text-xl font-bold text-white mb-1">Gemini 커플 리포트</h2>
+                            <p id="geminiSubtitle" class="text-xs text-slate-400 mb-5 uppercase tracking-wider"></p>
+                            <div id="geminiAwards" class="w-full space-y-3 pb-4"></div>
+                        </div>
+                        <!-- Slide 2: GEMINI SAYS -->
+                        <div id="geminiSlide2" class="overflow-y-auto p-6 pt-10" style="flex: 0 0 50%;">
+                            <div id="geminiComment" class="relative bg-gradient-to-r from-primary/10 to-gemini-blue/10 p-5 rounded-xl border border-primary/20 hidden">
+                                <div class="absolute -top-2 left-4 px-2 bg-[#15231a] text-[10px] text-primary font-bold">GEMINI SAYS</div>
+                                <p id="geminiCommentText" class="text-sm text-slate-200 leading-relaxed text-left mt-2"></p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-[#102216] text-xs font-bold border-2 border-[#15231a] z-20">AI</div>
                 </div>
-                <!-- Title -->
-                <h2 class="text-xl font-bold text-white mb-1">Gemini 커플 리포트</h2>
-                <p id="geminiSubtitle" class="text-xs text-slate-400 mb-6 uppercase tracking-wider"></p>
-                <!-- Awards Container -->
-                <div id="geminiAwards" class="w-full space-y-3 mb-6">
-                    <!-- Award cards injected by JS -->
-                </div>
-                <!-- Comment Box -->
-                <div id="geminiComment" class="relative bg-gradient-to-r from-primary/10 to-gemini-blue/10 p-5 rounded-xl border border-primary/20 mb-6 w-full hidden">
-                    <div class="absolute -top-2 left-4 px-2 bg-[#15231a] text-[10px] text-primary font-bold">GEMINI SAYS</div>
-                    <p id="geminiCommentText" class="text-sm text-slate-200 leading-relaxed text-left"></p>
+                <!-- Navigation Dots -->
+                <div class="flex justify-center items-center gap-2 py-3 z-10 relative">
+                    <button id="geminiDot1" class="h-2 w-4 rounded-full bg-primary transition-all duration-300"></button>
+                    <button id="geminiDot2" class="h-2 w-2 rounded-full bg-white/20 transition-all duration-300"></button>
                 </div>
                 <!-- Download Button -->
-                <div class="w-full">
+                <div class="px-6 pb-6 z-10 relative">
                     <button id="downloadGeminiBtn"
                         class="w-full py-3 px-4 rounded-xl bg-primary text-[#102216] text-sm font-bold hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                         <span class="material-symbols-outlined text-lg">download</span>
-                        저장하기
+                        2장 저장하기
                     </button>
                 </div>
             </div>
