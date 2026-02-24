@@ -261,14 +261,19 @@
             </div>
         </div>
 
+        <script>
+            // Populate form values immediately from localStorage (before async module loads)
+            document.getElementById('keyInput').value = localStorage.getItem('gemini_api_key') || '';
+            document.getElementById('meAliasInput').value = localStorage.getItem('alias_me') || '';
+            document.getElementById('youAliasInput').value = localStorage.getItem('alias_you') || '';
+            document.getElementById('budgetInput').value = localStorage.getItem('couple_monthly_budget') || '';
+        </script>
         <script type="module">
             import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, addTx, getMyRole, setMyRole, toAbsolutePayer, checkRedModeCache, handleReceiptScan, getGeminiUsageSummary, clearGeminiUsageLog } from './js/app.js';
             checkRedModeCache();
 
             const meInp = document.getElementById('meAliasInput');
             const youInp = document.getElementById('youAliasInput');
-            meInp.value = getMeAlias();
-            youInp.value = getYouAlias();
 
             document.getElementById('saveAliasBtn').onclick = () => {
                 setMeAlias(meInp.value.trim() || '나');
@@ -305,7 +310,6 @@
             });
 
             const keyInp = document.getElementById('keyInput');
-            keyInp.value = getKey();
 
             document.getElementById('saveKeyBtn').onclick = () => {
                 setKey(keyInp.value.trim());
@@ -313,7 +317,6 @@
             };
 
             const budgetInp = document.getElementById('budgetInput');
-            budgetInp.value = getBudget();
 
             document.getElementById('saveBudgetBtn').onclick = () => {
                 const val = Number(budgetInp.value);
