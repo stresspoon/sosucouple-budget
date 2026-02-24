@@ -131,6 +131,22 @@
                 </div>
             </section>
 
+            <!-- Gemini API Usage Tracking -->
+            <section
+                class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5 space-y-4">
+                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-white/5 pb-3">
+                    <span class="material-symbols-outlined text-primary">monitoring</span>
+                    <h2 class="text-lg font-bold">API 사용량 / 비용</h2>
+                </div>
+                <div id="usageContent">
+                    <p class="text-sm text-slate-400">사용 내역이 없습니다.</p>
+                </div>
+                <div id="usageClearWrap" class="hidden">
+                    <button id="clearUsageBtn"
+                        class="w-full bg-slate-800 text-slate-300 font-bold px-4 py-2.5 rounded-xl hover:bg-slate-700 transition-colors text-sm">사용량 기록 초기화</button>
+                </div>
+            </section>
+
             <section
                 class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5">
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-3 cursor-pointer"
@@ -246,7 +262,7 @@
         </div>
 
         <script type="module">
-            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, addTx, getMyRole, setMyRole, toAbsolutePayer, checkRedModeCache, handleReceiptScan } from './js/app.js';
+            import { getKey, setKey, getBudget, setBudget, clearTx, getMeAlias, setMeAlias, getYouAlias, setYouAlias, addTx, getMyRole, setMyRole, toAbsolutePayer, checkRedModeCache, handleReceiptScan, getGeminiUsageSummary, clearGeminiUsageLog } from './js/app.js';
             checkRedModeCache();
 
             const meInp = document.getElementById('meAliasInput');
@@ -340,6 +356,87 @@
                     location.reload();
                 } catch (err) {
                     alert('영수증 인식 실패: ' + err.message);
+                }
+            };
+
+            // --- Gemini API Usage Rendering ---
+            function renderUsage() {
+                const summary = getGeminiUsageSummary();
+                const el = document.getElementById('usageContent');
+                const clearWrap = document.getElementById('usageClearWrap');
+
+                if (summary.totalCalls === 0) {
+                    el.innerHTML = '<p class="text-sm text-slate-400">API 사용 내역이 없습니다.</p>';
+                    clearWrap.classList.add('hidden');
+                    return;
+                }
+
+                const krwRate = 1350;
+                const totalKrw = Math.round(summary.totalCostUsd * krwRate);
+                const featureLabels = { receipt_scan: '영수증 스캔', monthly_insight: '월간 리포트' };
+
+                // Current month stats
+                const curMonth = new Date().toISOString().slice(0, 7);
+                const cur = summary.byMonth[curMonth];
+
+                let monthRows = '';
+                const sortedMonths = Object.keys(summary.byMonth).sort().reverse();
+                for (const m of sortedMonths) {
+                    const d = summary.byMonth[m];
+                    const mKrw = Math.round(d.cost * krwRate);
+                    monthRows += `
+                        <div class="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                            <span class="text-sm text-slate-300">${m}</span>
+                            <div class="text-right">
+                                <span class="text-sm font-bold text-white">${mKrw.toLocaleString()}원</span>
+                                <span class="text-[11px] text-slate-500 ml-1">($${d.cost.toFixed(4)})</span>
+                                <span class="text-[11px] text-slate-500 block">${d.count}회 호출</span>
+                            </div>
+                        </div>`;
+                }
+
+                let featureRows = '';
+                for (const [key, d] of Object.entries(summary.byFeature)) {
+                    const fKrw = Math.round(d.cost * krwRate);
+                    featureRows += `
+                        <div class="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                            <span class="text-sm text-slate-300">${featureLabels[key] || key}</span>
+                            <div class="text-right">
+                                <span class="text-sm font-bold text-white">${fKrw.toLocaleString()}원</span>
+                                <span class="text-[11px] text-slate-500 ml-1">(${d.count}회)</span>
+                            </div>
+                        </div>`;
+                }
+
+                el.innerHTML = `
+                    <div class="bg-[#15231a] rounded-xl p-4 mb-3">
+                        <p class="text-[11px] text-slate-500 mb-1">누적 비용 (gemini-2.5-flash)</p>
+                        <p class="text-2xl font-bold text-primary">${totalKrw.toLocaleString()}원</p>
+                        <p class="text-xs text-slate-400 mt-0.5">$${summary.totalCostUsd.toFixed(4)} USD | 총 ${summary.totalCalls}회 호출</p>
+                        <div class="flex gap-4 mt-3 text-[11px] text-slate-500">
+                            <span>Input: ${(summary.totalInput / 1000).toFixed(1)}K tokens</span>
+                            <span>Output: ${(summary.totalOutput / 1000).toFixed(1)}K tokens</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-xs font-bold text-slate-400 mb-2">기능별</p>
+                        ${featureRows}
+                    </div>
+                    <div class="space-y-1 mt-4">
+                        <p class="text-xs font-bold text-slate-400 mb-2">월별</p>
+                        ${monthRows}
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-3">* 환율 $1 = ${krwRate.toLocaleString()}원 기준 추정치. 실제 청구액과 다를 수 있습니다.</p>
+                `;
+                clearWrap.classList.remove('hidden');
+            }
+
+            renderUsage();
+
+            document.getElementById('clearUsageBtn').onclick = () => {
+                if (confirm('API 사용량 기록을 초기화하시겠습니까?')) {
+                    clearGeminiUsageLog();
+                    renderUsage();
                 }
             };
         </script>

@@ -43,6 +43,71 @@ if (supabase) {
 export function getKey() { return localStorage.getItem(KEY) || ''; }
 export function setKey(v) { localStorage.setItem(KEY, v || ''); }
 
+// --- Gemini API Cost Tracking ---
+const GEMINI_USAGE_KEY = 'gemini_api_usage_log';
+const GEMINI_PRICING = {
+  'gemini-2.5-flash': { input: 0.30, output: 2.50 } // USD per 1M tokens
+};
+
+function logGeminiUsage(model, feature, usageMetadata) {
+  if (!usageMetadata) return;
+  const log = JSON.parse(localStorage.getItem(GEMINI_USAGE_KEY) || '[]');
+  log.push({
+    ts: new Date().toISOString(),
+    model,
+    feature,
+    promptTokens: usageMetadata.promptTokenCount || 0,
+    candidatesTokens: usageMetadata.candidatesTokenCount || 0,
+    totalTokens: usageMetadata.totalTokenCount || 0,
+    thoughtTokens: usageMetadata.thoughtsTokenCount || 0
+  });
+  // Keep last 500 entries max
+  if (log.length > 500) log.splice(0, log.length - 500);
+  localStorage.setItem(GEMINI_USAGE_KEY, JSON.stringify(log));
+}
+
+export function getGeminiUsageLog() {
+  return JSON.parse(localStorage.getItem(GEMINI_USAGE_KEY) || '[]');
+}
+
+export function getGeminiUsageSummary() {
+  const log = getGeminiUsageLog();
+  let totalInput = 0, totalOutput = 0, totalCostUsd = 0;
+  const byMonth = {};
+  const byFeature = {};
+
+  for (const entry of log) {
+    const month = entry.ts.slice(0, 7);
+    const pricing = GEMINI_PRICING[entry.model] || GEMINI_PRICING['gemini-2.5-flash'];
+    const inputCost = (entry.promptTokens / 1_000_000) * pricing.input;
+    const outputCost = (entry.candidatesTokens / 1_000_000) * pricing.output;
+    const cost = inputCost + outputCost;
+
+    totalInput += entry.promptTokens;
+    totalOutput += entry.candidatesTokens;
+    totalCostUsd += cost;
+
+    if (!byMonth[month]) byMonth[month] = { input: 0, output: 0, cost: 0, count: 0 };
+    byMonth[month].input += entry.promptTokens;
+    byMonth[month].output += entry.candidatesTokens;
+    byMonth[month].cost += cost;
+    byMonth[month].count += 1;
+
+    const feat = entry.feature || 'unknown';
+    if (!byFeature[feat]) byFeature[feat] = { input: 0, output: 0, cost: 0, count: 0 };
+    byFeature[feat].input += entry.promptTokens;
+    byFeature[feat].output += entry.candidatesTokens;
+    byFeature[feat].cost += cost;
+    byFeature[feat].count += 1;
+  }
+
+  return { totalInput, totalOutput, totalCostUsd, totalCalls: log.length, byMonth, byFeature };
+}
+
+export function clearGeminiUsageLog() {
+  localStorage.removeItem(GEMINI_USAGE_KEY);
+}
+
 const BUDGET_KEY = 'couple_monthly_budget';
 export function getBudget() { return Number(localStorage.getItem(BUDGET_KEY)) || 1500000; }
 export function setBudget(v) { localStorage.setItem(BUDGET_KEY, Number(v) || 1500000); }
@@ -325,6 +390,7 @@ export async function parseReceiptWithGemini(file, key) {
   });
   const j = await r.json();
   if (!r.ok) throw new Error(j?.error?.message || 'Gemini 호출 실패');
+  logGeminiUsage(model, 'receipt_scan', j.usageMetadata);
   const text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('\n').trim();
   const cleaned = text.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
   const obj = JSON.parse(cleaned);
@@ -393,6 +459,7 @@ ${txCtx}`;
   });
   const j = await r.json();
   if (!r.ok) throw new Error(j?.error?.message || 'Gemini 분석 실패');
+  logGeminiUsage('gemini-2.5-flash', 'monthly_insight', j.usageMetadata);
 
   let text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('\n').trim();
   text = text.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
