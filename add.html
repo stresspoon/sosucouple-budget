@@ -141,6 +141,25 @@
                         placeholder="결제처 입력 (예: 스타벅스)" type="text" />
                 </div>
             </div>
+
+            <!-- 세부 항목 -->
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between ml-1">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">세부 항목</label>
+                    <button id="addItemBtn" type="button"
+                        class="w-6 h-6 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center text-primary transition-colors">
+                        <span class="material-symbols-outlined text-[16px] font-bold">add</span>
+                    </button>
+                </div>
+                <div id="itemsContainer" class="flex flex-col gap-2">
+                    <div class="item-row flex gap-2">
+                        <input type="text" placeholder="품목명 (예: 아메리카노)"
+                            class="item-name flex-[2] bg-surface-dark text-slate-200 placeholder-slate-500 rounded-xl py-3 px-3 border-none focus:ring-1 focus:ring-primary focus:bg-surface-highlight transition-all text-sm" />
+                        <input type="number" inputmode="numeric" placeholder="금액"
+                            class="item-price flex-1 bg-surface-dark text-slate-200 placeholder-slate-500 rounded-xl py-3 px-3 border-none focus:ring-1 focus:ring-primary focus:bg-surface-highlight transition-all text-sm text-right" />
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -190,6 +209,42 @@
         if (payerMeLabel) payerMeLabel.textContent = getMeAlias();
         if (payerYouLabel) payerYouLabel.textContent = getYouAlias();
 
+        // --- 세부 항목 동적 추가/삭제 ---
+        const itemsContainer = document.getElementById('itemsContainer');
+        const addItemBtn = document.getElementById('addItemBtn');
+
+        function createItemRow() {
+            const row = document.createElement('div');
+            row.className = 'item-row flex gap-2 items-center';
+            row.innerHTML = `
+                <input type="text" placeholder="품목명"
+                    class="item-name flex-[2] bg-surface-dark text-slate-200 placeholder-slate-500 rounded-xl py-3 px-3 border-none focus:ring-1 focus:ring-primary focus:bg-surface-highlight transition-all text-sm" />
+                <input type="number" inputmode="numeric" placeholder="금액"
+                    class="item-price flex-1 bg-surface-dark text-slate-200 placeholder-slate-500 rounded-xl py-3 px-3 border-none focus:ring-1 focus:ring-primary focus:bg-surface-highlight transition-all text-sm text-right" />
+                <button type="button" class="remove-item-btn w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center text-red-400 transition-colors shrink-0">
+                    <span class="material-symbols-outlined text-[14px]">close</span>
+                </button>`;
+            row.querySelector('.remove-item-btn').addEventListener('click', () => row.remove());
+            return row;
+        }
+
+        addItemBtn.addEventListener('click', () => {
+            itemsContainer.appendChild(createItemRow());
+        });
+
+        function collectItems() {
+            const rows = itemsContainer.querySelectorAll('.item-row');
+            const items = [];
+            rows.forEach(row => {
+                const name = row.querySelector('.item-name').value.trim();
+                const price = Number(row.querySelector('.item-price').value) || 0;
+                if (name || price > 0) {
+                    items.push({ name: name || '항목', price });
+                }
+            });
+            return items;
+        }
+
         // Pre-fill form in edit mode
         if (isEditMode) {
             try {
@@ -202,6 +257,21 @@
                 const relPayer = toRelativePayer(tx.payer || 'me');
                 const payerRadio = document.querySelector(`input[name="payer_type"][value="${relPayer}"]`);
                 if (payerRadio) payerRadio.checked = true;
+                // Restore saved items
+                if (Array.isArray(tx.items) && tx.items.length > 0) {
+                    const firstRow = itemsContainer.querySelector('.item-row');
+                    tx.items.forEach((item, i) => {
+                        if (i === 0 && firstRow) {
+                            firstRow.querySelector('.item-name').value = item.name || '';
+                            firstRow.querySelector('.item-price').value = item.price || '';
+                        } else {
+                            const row = createItemRow();
+                            row.querySelector('.item-name').value = item.name || '';
+                            row.querySelector('.item-price').value = item.price || '';
+                            itemsContainer.appendChild(row);
+                        }
+                    });
+                }
             } catch (err) {
                 alert('데이터를 불러올 수 없습니다: ' + err.message);
                 window.history.back();
@@ -224,6 +294,16 @@
             selCat.textContent = '식비';
             merch.value = '';
             document.querySelector('input[name="payer_type"][value="me"]').checked = true;
+            // Reset items to single empty row
+            itemsContainer.innerHTML = '';
+            const emptyRow = document.createElement('div');
+            emptyRow.className = 'item-row flex gap-2';
+            emptyRow.innerHTML = `
+                <input type="text" placeholder="품목명 (예: 아메리카노)"
+                    class="item-name flex-[2] bg-surface-dark text-slate-200 placeholder-slate-500 rounded-xl py-3 px-3 border-none focus:ring-1 focus:ring-primary focus:bg-surface-highlight transition-all text-sm" />
+                <input type="number" inputmode="numeric" placeholder="금액"
+                    class="item-price flex-1 bg-surface-dark text-slate-200 placeholder-slate-500 rounded-xl py-3 px-3 border-none focus:ring-1 focus:ring-primary focus:bg-surface-highlight transition-all text-sm text-right" />`;
+            itemsContainer.appendChild(emptyRow);
             updateBtnState();
         };
 
@@ -243,7 +323,7 @@
                 merchant: merch.value.trim() || '미분류',
                 payer: toAbsolutePayer(payer),
                 memo: '',
-                items: []
+                items: collectItems()
             };
 
             try {
